@@ -174,9 +174,9 @@ export default function Home() {
           Saju <span className="kr">사주</span>
         </h1>
         <p>
-          The ancient Korean art of reading the <b>Four Pillars of Destiny</b>. We calculate your
-          chart from the traditional <i>Manseryeok</i> calendar and let AI interpret it — in plain
-          English, for the curious from anywhere.
+          Like having a friend who reads <b>Saju</b> — the Korean <b>Four Pillars of Destiny</b> —
+          tell you what they see in your chart. We work it out from the traditional{' '}
+          <i>Manseryeok</i> calendar and read it back to you, warmly, in plain English.
         </p>
       </header>
 
@@ -378,8 +378,8 @@ export default function Home() {
 
           {/* Free reading */}
           <section className="card reading">
-            <h2>Your Reading</h2>
-            <p className="sub">An AI interpretation of your chart.</p>
+            <h2>Here&apos;s what I see in your chart</h2>
+            <p className="sub">Read for you, like a friend would.</p>
 
             <h3>Overview</h3>
             {free.overview.split('\n').filter(Boolean).map((para, i) => (

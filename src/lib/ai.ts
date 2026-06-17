@@ -30,14 +30,17 @@ export interface DetailedReading {
   advice: string[];
 }
 
-const SYSTEM = `You are a warm, knowledgeable Korean Saju (사주, Four Pillars of Destiny) reader writing for an international audience who may be encountering Saju for the first time.
+const SYSTEM = `You are the reader's close friend who happens to know Korean Saju (사주, the Four Pillars of Destiny) really well — and you're reading their chart for them over coffee. The reader is international and may be new to Saju.
 
-Guidelines:
-- Write in clear, engaging English. Briefly explain Korean/Chinese terms when you use them.
-- Base your interpretation on the chart data provided (the Four Pillars, the Day Master, and the five-element balance). Refer to specific pillars and elements so it feels personal and grounded.
-- Be encouraging and reflective. Frame this as a tool for self-understanding, not fixed fate.
+Voice:
+- Talk TO them, warmly and directly, in second person ("you"). Use their name if given. Sound like a real friend, not a textbook or a fortune-cookie machine — curious, affectionate, a little playful, genuinely excited to share what you see.
+- Use natural, conversational English. When a Korean/Chinese term slips in, explain it casually like you would to a friend ("your Day Master — basically 'you' in the chart").
+- React to what's actually in their chart (specific pillars, the Day Master, the element balance). Point things out like you noticed them: "see how Fire shows up twice? that tracks with…". Make it feel personal and observed, never generic.
+- Be encouraging and honest. Name the tricky parts gently, the way a good friend would — as something to grow into, not a verdict.
+
+Boundaries:
 - Never make medical, financial, or legal guarantees, and avoid fear-based or absolute predictions.
-- Keep a respectful, culturally authentic tone.`;
+- This is for reflection and fun, not fixed fate — keep that spirit. Stay respectful and culturally authentic.`;
 
 function chartContext(chart: SajuChart): string {
   const p = chart.pillars;
@@ -123,10 +126,10 @@ export async function generateFreeReading(chart: SajuChart): Promise<FreeReading
   if (!client) return fallbackFree(chart);
   const prompt = `${chartContext(chart)}
 
-Produce a FREE-TIER Saju reading with:
-- "overview": 2–3 short paragraphs introducing this chart, the meaning of the Day Master, and the overall feel of the destiny. Explain what the Four Pillars represent.
-- "personality": a "summary" paragraph plus "strengths" (3–5 items) and "challenges" (3–4 items), grounded in the Day Master and element balance.
-- "elementNote": one paragraph on what the five-element balance (dominant and missing elements) suggests about temperament and what to cultivate.`;
+Read this for them like a friend would, in the warm second-person voice. Return a FREE-TIER reading with:
+- "overview": 2–3 short paragraphs easing them in — what their chart feels like at a glance, who their Day Master makes them, and what the Four Pillars are (explained casually). Talk to them, not about them.
+- "personality": a "summary" paragraph (conversational, like you're describing them to their face), plus "strengths" (3–5 short items) and "challenges" (3–4 short, kind items).
+- "elementNote": one friendly paragraph on what their element balance (what's strong, what's missing) says about them and what's worth leaning into.`;
   try {
     return JSON.parse(await callClaude(prompt, FREE_SCHEMA, 3000)) as FreeReading;
   } catch {
@@ -138,7 +141,7 @@ export async function generateDetailedReading(chart: SajuChart): Promise<Detaile
   if (!client) return fallbackDetailed(chart);
   const prompt = `${chartContext(chart)}
 
-Produce a PREMIUM, in-depth Saju reading. Each field should be rich and specific (2–4 paragraphs where natural), referencing the pillars and elements:
+Now go deep — same warm, friend-to-friend voice, talking directly to them. This is the PREMIUM reading, so be generous and specific (2–4 paragraphs where natural), always tying it back to their actual pillars and elements:
 - "career": vocational tendencies, work style, fields that may suit the Day Master and element profile.
 - "wealth": relationship with money, earning style, and prosperity tendencies.
 - "relationships": love, compatibility patterns, family and social dynamics.
