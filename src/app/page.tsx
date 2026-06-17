@@ -30,11 +30,21 @@ interface Chart {
 
 interface FreeReading {
   overview: string;
-  personality: { summary: string; strengths: string[]; challenges: string[] };
+  personality: {
+    summary: string;
+    traits: string[];
+    strengths: string[];
+    weaknesses: string[];
+    innerConflict: string;
+  };
   elementNote: string;
 }
 
 interface DetailedReading {
+  yearFortune: string;
+  compatibility: string;
+  benefactors: string;
+  cautions: string;
   career: string;
   wealth: string;
   relationships: string;
@@ -388,6 +398,17 @@ export default function Home() {
 
             <h3>Personality</h3>
             <p>{free.personality.summary}</p>
+
+            <h4 className="mini">Your traits</h4>
+            <div className="tags">
+              {free.personality.traits.map((t, i) => (
+                <span className="trait" key={i}>
+                  {t}
+                </span>
+              ))}
+            </div>
+
+            <h4 className="mini">Strengths</h4>
             <div className="tags">
               {free.personality.strengths.map((s, i) => (
                 <span className="pos" key={i}>
@@ -395,13 +416,18 @@ export default function Home() {
                 </span>
               ))}
             </div>
+
+            <h4 className="mini">Weaknesses</h4>
             <div className="tags">
-              {free.personality.challenges.map((c, i) => (
+              {free.personality.weaknesses.map((w, i) => (
                 <span className="neg" key={i}>
-                  △ {c}
+                  △ {w}
                 </span>
               ))}
             </div>
+
+            <h4 className="mini">Your inner conflict</h4>
+            <p>{free.personality.innerConflict}</p>
 
             <h3>Element Balance</h3>
             <p>{free.elementNote}</p>
@@ -412,6 +438,15 @@ export default function Home() {
             <section className="card reading">
               <h2>✦ Your Detailed Destiny Report</h2>
               <p className="sub">The full, premium interpretation of your Four Pillars.</p>
+
+              <h3>This Year ({new Date().getFullYear()})</h3>
+              <p>{detailed.yearFortune}</p>
+              <h3>Compatibility with Others</h3>
+              <p>{detailed.compatibility}</p>
+              <h3>Your Benefactors (귀인)</h3>
+              <p>{detailed.benefactors}</p>
+              <h3>What to Be Careful Of</h3>
+              <p>{detailed.cautions}</p>
 
               <h3>Career &amp; Calling</h3>
               <p>{detailed.career}</p>
@@ -442,9 +477,10 @@ export default function Home() {
                 $9 <small>· one-time</small>
               </div>
               <ul>
-                <li>In-depth career &amp; calling analysis</li>
-                <li>Wealth, love &amp; relationship dynamics</li>
-                <li>Health constitution &amp; life-phase forecast</li>
+                <li>Your {new Date().getFullYear()} fortune, in detail</li>
+                <li>Compatibility — who lifts you up, who clashes</li>
+                <li>Your benefactors (귀인) &amp; situations to avoid</li>
+                <li>Career, wealth, love, health &amp; life-phase forecast</li>
                 <li>Your lucky elements &amp; personalized guidance</li>
               </ul>
               <button className="btn secondary" onClick={startCheckout} disabled={unlocking}>

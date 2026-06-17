@@ -3,7 +3,7 @@
 // templated reading so the app stays usable for local demos.
 
 import Anthropic from '@anthropic-ai/sdk';
-import { ELEMENT_TRAITS } from './saju/constants';
+import { ELEMENT_TRAITS, STEMS, BRANCHES } from './saju/constants';
 import { pillarLabel, type SajuChart } from './saju/calculator';
 
 const MODEL = 'claude-opus-4-8';
@@ -14,13 +14,19 @@ export interface FreeReading {
   overview: string;
   personality: {
     summary: string;
-    strengths: string[];
-    challenges: string[];
+    traits: string[]; // 성격적 특징
+    strengths: string[]; // 장점
+    weaknesses: string[]; // 단점
+    innerConflict: string; // 내적갈등
   };
   elementNote: string;
 }
 
 export interface DetailedReading {
+  yearFortune: string; // 올해(2026) 운세
+  compatibility: string; // 타인과의 궁합
+  benefactors: string; // 귀인 (helpful people)
+  cautions: string; // 멀리해야 할 상황 / 사람
   career: string;
   wealth: string;
   relationships: string;
@@ -41,6 +47,12 @@ Voice:
 Boundaries:
 - Never make medical, financial, or legal guarantees, and avoid fear-based or absolute predictions.
 - This is for reflection and fun, not fixed fate — keep that spirit. Stay respectful and culturally authentic.`;
+
+function yearPillarLabel(y: number): string {
+  const s = STEMS[(((y - 4) % 10) + 10) % 10];
+  const b = BRANCHES[(((y - 4) % 12) + 12) % 12];
+  return `${s.rom}-${b.rom} (${s.han}${b.han}) — ${s.yin ? 'Yin' : 'Yang'} ${s.element} ${b.animal}`;
+}
 
 function chartContext(chart: SajuChart): string {
   const p = chart.pillars;
@@ -78,10 +90,12 @@ const FREE_SCHEMA = {
       type: 'object',
       properties: {
         summary: { type: 'string' },
+        traits: { type: 'array', items: { type: 'string' } },
         strengths: { type: 'array', items: { type: 'string' } },
-        challenges: { type: 'array', items: { type: 'string' } },
+        weaknesses: { type: 'array', items: { type: 'string' } },
+        innerConflict: { type: 'string' },
       },
-      required: ['summary', 'strengths', 'challenges'],
+      required: ['summary', 'traits', 'strengths', 'weaknesses', 'innerConflict'],
       additionalProperties: false,
     },
     elementNote: { type: 'string' },
@@ -93,6 +107,10 @@ const FREE_SCHEMA = {
 const DETAILED_SCHEMA = {
   type: 'object',
   properties: {
+    yearFortune: { type: 'string' },
+    compatibility: { type: 'string' },
+    benefactors: { type: 'string' },
+    cautions: { type: 'string' },
     career: { type: 'string' },
     wealth: { type: 'string' },
     relationships: { type: 'string' },
@@ -101,7 +119,19 @@ const DETAILED_SCHEMA = {
     luckyElements: { type: 'string' },
     advice: { type: 'array', items: { type: 'string' } },
   },
-  required: ['career', 'wealth', 'relationships', 'health', 'lifePhases', 'luckyElements', 'advice'],
+  required: [
+    'yearFortune',
+    'compatibility',
+    'benefactors',
+    'cautions',
+    'career',
+    'wealth',
+    'relationships',
+    'health',
+    'lifePhases',
+    'luckyElements',
+    'advice',
+  ],
   additionalProperties: false,
 };
 
@@ -126,12 +156,17 @@ export async function generateFreeReading(chart: SajuChart): Promise<FreeReading
   if (!client) return fallbackFree(chart);
   const prompt = `${chartContext(chart)}
 
-Read this for them like a friend would, in the warm second-person voice. Return a FREE-TIER reading with:
+Read this for them like a friend would, in the warm second-person voice. Return a FREE-TIER reading with a genuinely useful personality picture:
 - "overview": 2–3 short paragraphs easing them in — what their chart feels like at a glance, who their Day Master makes them, and what the Four Pillars are (explained casually). Talk to them, not about them.
-- "personality": a "summary" paragraph (conversational, like you're describing them to their face), plus "strengths" (3–5 short items) and "challenges" (3–4 short, kind items).
+- "personality":
+    - "summary": a conversational paragraph describing who they are, like you're describing them to their face.
+    - "traits": 4–6 short personality characteristics (성격적 특징) — the defining notes of their temperament.
+    - "strengths": 3–5 short items (장점).
+    - "weaknesses": 3–4 short, kind items (단점) — honest but gentle.
+    - "innerConflict": one warm paragraph on the inner tension they likely carry (내적갈등) — the push-and-pull inside them implied by the Day Master and element balance (e.g. craving freedom yet needing security). This is the emotionally resonant heart of the free reading.
 - "elementNote": one friendly paragraph on what their element balance (what's strong, what's missing) says about them and what's worth leaning into.`;
   try {
-    return JSON.parse(await callClaude(prompt, FREE_SCHEMA, 3000)) as FreeReading;
+    return JSON.parse(await callClaude(prompt, FREE_SCHEMA, 3500)) as FreeReading;
   } catch {
     return fallbackFree(chart);
   }
@@ -139,18 +174,25 @@ Read this for them like a friend would, in the warm second-person voice. Return 
 
 export async function generateDetailedReading(chart: SajuChart): Promise<DetailedReading> {
   if (!client) return fallbackDetailed(chart);
+  const year = new Date().getFullYear();
   const prompt = `${chartContext(chart)}
 
+The current year is ${year}, whose Saju pillar is ${yearPillarLabel(year)}. Interpret how this year's energy interacts with their chart.
+
 Now go deep — same warm, friend-to-friend voice, talking directly to them. This is the PREMIUM reading, so be generous and specific (2–4 paragraphs where natural), always tying it back to their actual pillars and elements:
-- "career": vocational tendencies, work style, fields that may suit the Day Master and element profile.
-- "wealth": relationship with money, earning style, and prosperity tendencies.
-- "relationships": love, compatibility patterns, family and social dynamics.
-- "health": general constitution and well-being themes implied by the element balance (no diagnoses).
+- "yearFortune": their outlook for ${year} specifically — how the ${yearPillarLabel(year)} year meets their chart, what to lean into and watch for this year, across work, money, love, and well-being. Make it feel timely and concrete.
+- "compatibility": how they tend to click (or clash) with others — which Day Masters / elements / zodiac animals harmonize with them and which create friction, in love, friendship, and work.
+- "benefactors": their 귀인 (helpful people / fortunate allies) — the kinds of people, element types, or situations that tend to lift them up, and how to recognize and attract them.
+- "cautions": situations and types of people to be careful around or keep at a distance — patterns that drain or destabilize them, framed constructively (not as fear).
+- "career": vocational tendencies, work style, and fields that suit their Day Master and element profile.
+- "wealth": their relationship with money, earning style, and prosperity tendencies.
+- "relationships": love, family, and social dynamics in depth.
+- "health": general constitution and well-being themes from the element balance (no diagnoses).
 - "lifePhases": how energy and fortune may shift across early life, mid-life, and later years.
-- "luckyElements": which of the five elements to strengthen or balance, with concrete everyday suggestions (colors, directions, activities, seasons).
+- "luckyElements": which elements to strengthen or balance, with concrete everyday suggestions (colors, directions, activities, seasons).
 - "advice": 4–6 practical, uplifting pieces of life guidance.`;
   try {
-    return JSON.parse(await callClaude(prompt, DETAILED_SCHEMA, 8000)) as DetailedReading;
+    return JSON.parse(await callClaude(prompt, DETAILED_SCHEMA, 9000)) as DetailedReading;
   } catch {
     return fallbackDetailed(chart);
   }
@@ -160,14 +202,19 @@ Now go deep — same warm, friend-to-friend voice, talking directly to them. Thi
 function fallbackFree(chart: SajuChart): FreeReading {
   const dm = chart.dayMaster;
   const trait = ELEMENT_TRAITS[dm.element];
+  const traitWords = trait.split(', ').map((t) => t.charAt(0).toUpperCase() + t.slice(1));
   return {
     overview: `Your Four Pillars center on a ${dm.yin ? 'Yin' : 'Yang'} ${dm.element} Day Master (${dm.rom}, ${dm.han}) — this is "the self" in Saju, the lens through which your whole chart is read. Your year branch makes you a ${chart.zodiacAnimal}. The Four Pillars (year, month, day, hour) map the seasons of your life: ancestry and early years, family and growth, your core self and partnerships, and your later years and legacy.\n\n(This is a templated reading. Add an ANTHROPIC_API_KEY to unlock AI-generated interpretation.)`,
     personality: {
       summary: `As a ${dm.element} Day Master, your nature leans toward ${trait}. Your chart's dominant element is ${chart.dominantElement}, which colors how you meet the world.`,
-      strengths: trait.split(', ').map((t) => t.charAt(0).toUpperCase() + t.slice(1)),
-      challenges: chart.lackingElements.length
-        ? chart.lackingElements.map((e) => `Cultivating ${e} energy (${ELEMENT_TRAITS[e]})`)
-        : ['Balancing your strongest tendencies so they do not overwhelm subtler ones'],
+      traits: traitWords,
+      strengths: traitWords.slice(0, 3).map((t) => `Strong sense of ${t.toLowerCase()}`),
+      weaknesses: chart.lackingElements.length
+        ? chart.lackingElements.map((e) => `Can underuse ${e} qualities (${ELEMENT_TRAITS[e]})`)
+        : ['Your strongest tendencies can overshadow subtler ones'],
+      innerConflict: `As a ${dm.element} type you may feel a pull between ${trait.split(', ')[0]} and the balance your chart's ${
+        chart.lackingElements[0] || 'quieter'
+      } side asks for — a quiet tension between who you are and who you're growing into.`,
     },
     elementNote: `Your element balance is dominant in ${chart.dominantElement}${
       chart.lackingElements.length ? ` and light on ${chart.lackingElements.join(', ')}` : ''
@@ -177,8 +224,13 @@ function fallbackFree(chart: SajuChart): FreeReading {
 
 function fallbackDetailed(chart: SajuChart): DetailedReading {
   const dm = chart.dayMaster;
+  const year = new Date().getFullYear();
   return {
-    career: `A ${dm.element} Day Master often thrives in work that expresses ${ELEMENT_TRAITS[dm.element]}. (Templated — add an ANTHROPIC_API_KEY for a full AI reading.)`,
+    yearFortune: `In ${year}, the year's energy meets your ${dm.element} Day Master in its own way — a season to lean into your strengths and tend your balance. (Templated — add an ANTHROPIC_API_KEY for a full AI reading.)`,
+    compatibility: `Your ${dm.yin ? 'Yin' : 'Yang'} ${dm.element} nature tends to harmonize with complementary elements and clash with those that overwhelm it.`,
+    benefactors: `Your 귀인 (helpful allies) are often people who carry the ${chart.lackingElements[0] || 'balancing'} energy your chart is lighter on.`,
+    cautions: `Be mindful around situations that overload your dominant ${chart.dominantElement} energy or drain your reserves.`,
+    career: `A ${dm.element} Day Master often thrives in work that expresses ${ELEMENT_TRAITS[dm.element]}.`,
     wealth: `Your dominant ${chart.dominantElement} energy shapes a distinctive relationship with resources and timing.`,
     relationships: `In partnership, your ${dm.yin ? 'Yin' : 'Yang'} ${dm.element} nature seeks complementary energy that balances your chart.`,
     health: `Element balance points to tending your ${chart.lackingElements[0] || 'most overextended'} side for overall well-being.`,
