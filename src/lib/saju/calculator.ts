@@ -10,6 +10,15 @@ import {
   type Stem,
 } from './constants';
 import { julianDay, julianDayNumber, solarLongitude, solarTermJD } from './astronomy';
+import {
+  tenGod,
+  branchTenGod,
+  hiddenStems,
+  twelveStage,
+  type TenGod,
+} from './advanced';
+import { computeDaeun, computeSaeun, type DaeunResult, type SaeunPillar } from './luck';
+import { computeSinsal, type Sinsal } from './sinsal';
 
 export interface BirthData {
   name?: string;
@@ -29,6 +38,10 @@ export interface Pillar {
   branch: Branch;
   stemIndex: number;
   branchIndex: number;
+  tenGod: TenGod | null; // stem's Ten God (null = the Day Master itself)
+  branchTenGod: TenGod;
+  hidden: { han: string; rom: string; element: Element }[]; // 지장간
+  stage: { ko: string; rom: string; en: string }; // 십이운성
 }
 
 export interface SajuChart {
@@ -46,16 +59,28 @@ export interface SajuChart {
   elementCounts: Record<Element, number>;
   dominantElement: Element;
   lackingElements: Element[];
+  daeun: DaeunResult; // 대운 — 10-year fortune pillars
+  saeun: SaeunPillar[]; // 세운 — yearly pillars (a window around now)
+  currentSaeun: SaeunPillar; // this calendar year
+  sinsal: Sinsal[]; // 신살 — spirit stars present in the chart
 }
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 
-function pillar(stemIndex: number, branchIndex: number): Pillar {
+function pillar(stemIndex: number, branchIndex: number, dayStemIndex: number, isSelf: boolean): Pillar {
   return {
     stemIndex,
     branchIndex,
     stem: STEMS[stemIndex],
     branch: BRANCHES[branchIndex],
+    tenGod: isSelf ? null : tenGod(dayStemIndex, stemIndex),
+    branchTenGod: branchTenGod(dayStemIndex, branchIndex),
+    hidden: hiddenStems(branchIndex).map((s) => ({
+      han: STEMS[s].han,
+      rom: STEMS[s].rom,
+      element: STEMS[s].element,
+    })),
+    stage: twelveStage(dayStemIndex, branchIndex),
   };
 }
 
@@ -100,13 +125,13 @@ export function computeChart(birth: BirthData): SajuChart {
   if (!birth.timeUnknown) {
     const hourBranchIndex = mod(Math.floor((hour + 1) / 2), 12);
     const hourStemIndex = mod((dayStemIndex % 5) * 2 + hourBranchIndex, 10);
-    hourPillar = pillar(hourStemIndex, hourBranchIndex);
+    hourPillar = pillar(hourStemIndex, hourBranchIndex, dayStemIndex, false);
   }
 
   const pillars = {
-    year: pillar(yearStemIndex, yearBranchIndex),
-    month: pillar(monthStemIndex, monthBranchIndex),
-    day: pillar(dayStemIndex, dayBranchIndex),
+    year: pillar(yearStemIndex, yearBranchIndex, dayStemIndex, false),
+    month: pillar(monthStemIndex, monthBranchIndex, dayStemIndex, false),
+    day: pillar(dayStemIndex, dayBranchIndex, dayStemIndex, true),
     hour: hourPillar,
   };
 
@@ -135,6 +160,26 @@ export function computeChart(birth: BirthData): SajuChart {
   }
   const lackingElements = ELEMENTS.filter((e) => elementCounts[e] === 0);
 
+  // ── Daeun (대운), Saeun (세운), Sinsal (신살) ──
+  const daeun = computeDaeun({
+    birthJDUT: jdUT,
+    dayStemIndex,
+    monthStemIndex,
+    monthBranchIndex,
+    yearStemIndex,
+    gender: birth.gender,
+  });
+  const thisYear = new Date().getFullYear();
+  const saeun = computeSaeun(dayStemIndex, thisYear - 1, 8); // last year → +6 years
+  const currentSaeun = saeun.find((s) => s.year === thisYear) ?? saeun[0];
+  const sinsal = computeSinsal({
+    dayStemIndex,
+    dayGapja,
+    yearBranchIndex,
+    dayBranchIndex,
+    branches: [yearBranchIndex, monthBranchIndex, dayBranchIndex, hourPillar ? hourPillar.branchIndex : null],
+  });
+
   return {
     birth,
     sajuYear,
@@ -145,6 +190,10 @@ export function computeChart(birth: BirthData): SajuChart {
     elementCounts,
     dominantElement,
     lackingElements,
+    daeun,
+    saeun,
+    currentSaeun,
+    sinsal,
   };
 }
 

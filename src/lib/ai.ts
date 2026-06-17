@@ -54,6 +54,12 @@ function yearPillarLabel(y: number): string {
   return `${s.rom}-${b.rom} (${s.han}${b.han}) — ${s.yin ? 'Yin' : 'Yang'} ${s.element} ${b.animal}`;
 }
 
+function pillarDetail(label: string, p: SajuChart['pillars']['year'] | null): string {
+  if (!p) return `  ${label}: unknown (omitted)`;
+  const stemGod = p.tenGod ? `${p.tenGod.ko}/${p.tenGod.en}` : 'Day Master (self)';
+  return `  ${label}: ${pillarLabel(p)} — stem Ten God: ${stemGod}; branch Ten God: ${p.branchTenGod.ko}/${p.branchTenGod.en}; life stage: ${p.stage.ko}/${p.stage.en}; hidden stems: ${p.hidden.map((h) => h.han).join('')}`;
+}
+
 function chartContext(chart: SajuChart): string {
   const p = chart.pillars;
   const lines = [
@@ -64,11 +70,11 @@ function chartContext(chart: SajuChart): string {
     ).padStart(2, '0')} ${chart.birth.timeUnknown ? '(time unknown)' : `${String(chart.birth.hour).padStart(2, '0')}:${String(chart.birth.minute).padStart(2, '0')}`}`,
     `Zodiac animal (year branch): ${chart.zodiacAnimal}`,
     '',
-    'Four Pillars (사주):',
-    `  Year pillar:  ${pillarLabel(p.year)}`,
-    `  Month pillar: ${pillarLabel(p.month)}`,
-    `  Day pillar:   ${pillarLabel(p.day)}`,
-    `  Hour pillar:  ${p.hour ? pillarLabel(p.hour) : 'unknown (omitted)'}`,
+    'Four Pillars (사주) with full detail:',
+    pillarDetail('Year ', p.year),
+    pillarDetail('Month', p.month),
+    pillarDetail('Day  ', p.day),
+    pillarDetail('Hour ', p.hour),
     '',
     `Day Master (일간, "the self"): ${chart.dayMaster.rom} (${chart.dayMaster.han}) — ${
       chart.dayMaster.yin ? 'Yin' : 'Yang'
@@ -78,6 +84,20 @@ function chartContext(chart: SajuChart): string {
     ...Object.entries(chart.elementCounts).map(([el, n]) => `  ${el}: ${n}`),
     `Dominant element: ${chart.dominantElement}.`,
     `Missing element(s): ${chart.lackingElements.length ? chart.lackingElements.join(', ') : 'none'}.`,
+    '',
+    `Ten Gods (십성) present across the chart shape the personality and life themes — weave them in.`,
+    '',
+    'Spirit stars (신살):',
+    ...(chart.sinsal.length
+      ? chart.sinsal.map((s) => `  ${s.ko}/${s.en} (${s.where.join(', ')}): ${s.desc}`)
+      : ['  none of the major stars']),
+    '',
+    `Daeun (대운, 10-year luck), ${chart.daeun.forward ? 'forward' : 'reverse'} from age ${chart.daeun.startAge}:`,
+    ...chart.daeun.pillars
+      .slice(0, 6)
+      .map((d) => `  age ${d.age}: ${d.stem.rom}-${d.branch.rom} (${d.stem.han}${d.branch.han}), ${d.tenGod.ko}/${d.tenGod.en}`),
+    '',
+    `Saeun (세운, yearly luck) — this year ${chart.currentSaeun.year}: ${chart.currentSaeun.stem.han}${chart.currentSaeun.branch.han} (${chart.currentSaeun.stem.rom}-${chart.currentSaeun.branch.rom}), Ten God ${chart.currentSaeun.tenGod.ko}/${chart.currentSaeun.tenGod.en}.`,
   ];
   return lines.join('\n');
 }

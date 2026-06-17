@@ -5,13 +5,17 @@ export function serializeChart(chart: SajuChart) {
   const pillar = (p: Pillar | null) =>
     p
       ? {
-          stem: { han: p.stem.han, rom: p.stem.rom, element: p.stem.element },
+          stem: { han: p.stem.han, rom: p.stem.rom, element: p.stem.element, yin: p.stem.yin },
           branch: {
             han: p.branch.han,
             rom: p.branch.rom,
             element: p.branch.element,
             animal: p.branch.animal,
           },
+          tenGod: p.tenGod,
+          branchTenGod: p.branchTenGod,
+          hidden: p.hidden,
+          stage: p.stage,
         }
       : null;
   return {
@@ -33,5 +37,9 @@ export function serializeChart(chart: SajuChart) {
       day: pillar(chart.pillars.day),
       hour: pillar(chart.pillars.hour),
     },
+    daeun: chart.daeun,
+    saeun: chart.saeun,
+    currentSaeun: chart.currentSaeun,
+    sinsal: chart.sinsal,
   };
 }

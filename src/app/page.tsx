@@ -12,10 +12,29 @@ const ELEMENT_COLORS: Record<string, string> = {
 };
 const ELEMENTS = ['Wood', 'Fire', 'Earth', 'Metal', 'Water'];
 
+type TenGod = { ko: string; rom: string; en: string };
 type Pillar = {
+  stem: { han: string; rom: string; element: string; yin: boolean };
+  branch: { han: string; rom: string; element: string; animal: string };
+  tenGod: TenGod | null;
+  branchTenGod: TenGod;
+  hidden: { han: string; rom: string; element: string }[];
+  stage: { ko: string; rom: string; en: string };
+} | null;
+
+type DaeunPillar = {
+  age: number;
   stem: { han: string; rom: string; element: string };
   branch: { han: string; rom: string; element: string; animal: string };
-} | null;
+  tenGod: TenGod;
+};
+type SaeunPillar = {
+  year: number;
+  stem: { han: string; rom: string; element: string };
+  branch: { han: string; rom: string; element: string; animal: string };
+  tenGod: TenGod;
+};
+type Sinsal = { ko: string; rom: string; en: string; desc: string; where: string[] };
 
 interface Chart {
   sajuYear: number;
@@ -26,6 +45,10 @@ interface Chart {
   dominantElement: string;
   lackingElements: string[];
   pillars: { year: Pillar; month: Pillar; day: Pillar; hour: Pillar };
+  daeun: { forward: boolean; startAge: number; pillars: DaeunPillar[] };
+  saeun: SaeunPillar[];
+  currentSaeun: SaeunPillar;
+  sinsal: Sinsal[];
 }
 
 interface FreeReading {
@@ -339,25 +362,29 @@ export default function Home() {
                   <div className="tag">{tag}</div>
                   {p ? (
                     <>
-                      <div className="han">
+                      <div className="god top">{p.tenGod ? p.tenGod.en : 'Self'}</div>
+                      <div className="char" style={{ background: ELEMENT_COLORS[p.stem.element] }}>
                         {p.stem.han}
+                      </div>
+                      <div className="char" style={{ background: ELEMENT_COLORS[p.branch.element] }}>
                         {p.branch.han}
                       </div>
                       <div className="rom">
                         {p.stem.rom}-{p.branch.rom}
                       </div>
-                      <span
-                        className="el"
-                        style={{ background: ELEMENT_COLORS[p.stem.element] }}
-                        title={`Stem element: ${p.stem.element}`}
-                      >
-                        {p.stem.element}
-                      </span>
+                      <div className="god">{p.branchTenGod.en}</div>
+                      <div className="meta">
+                        {p.stage.en} · {p.branch.animal}
+                      </div>
+                      <div className="hidden">{p.hidden.map((h) => h.han).join(' ')}</div>
                     </>
                   ) : (
                     <>
-                      <div className="han" style={{ opacity: 0.3 }}>
-                        ??
+                      <div className="char" style={{ opacity: 0.25 }}>
+                        ?
+                      </div>
+                      <div className="char" style={{ opacity: 0.25 }}>
+                        ?
                       </div>
                       <div className="rom">time unknown</div>
                     </>
@@ -365,6 +392,10 @@ export default function Home() {
                 </div>
               ))}
             </div>
+            <p className="legend">
+              Top &amp; bottom labels are the <b>Ten Gods (십성)</b>; small text is the{' '}
+              <b>life stage (십이운성)</b>, zodiac animal, and <b>hidden stems (지장간)</b>.
+            </p>
 
             <h3 style={{ color: 'var(--accent)', marginTop: 22 }}>Five-Element Balance (오행)</h3>
             <div className="bars">
@@ -381,6 +412,60 @@ export default function Home() {
                     />
                   </div>
                   <span className="num">{chart.elementCounts[el]}</span>
+                </div>
+              ))}
+            </div>
+
+            {chart.sinsal.length > 0 && (
+              <>
+                <h3 style={{ color: 'var(--accent)', marginTop: 22 }}>Spirit Stars (신살)</h3>
+                <div className="sinsal">
+                  {chart.sinsal.map((s) => (
+                    <div className="sinsal-item" key={s.ko} title={s.where.join(', ')}>
+                      <b>
+                        {s.en} <span className="kr-sm">{s.ko}</span>
+                      </b>
+                      <span>{s.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <h3 style={{ color: 'var(--accent)', marginTop: 22 }}>
+              Major Luck Cycles · 대운{' '}
+              <span className="kr-sm">({chart.daeun.forward ? 'forward' : 'reverse'})</span>
+            </h3>
+            <div className="daeun">
+              {chart.daeun.pillars.map((d) => (
+                <div className="daeun-cell" key={d.age}>
+                  <div className="age">age {d.age}</div>
+                  <div className="dchar" style={{ background: ELEMENT_COLORS[d.stem.element] }}>
+                    {d.stem.han}
+                  </div>
+                  <div className="dchar" style={{ background: ELEMENT_COLORS[d.branch.element] }}>
+                    {d.branch.han}
+                  </div>
+                  <div className="dgod">{d.tenGod.en}</div>
+                </div>
+              ))}
+            </div>
+
+            <h3 style={{ color: 'var(--accent)', marginTop: 22 }}>Yearly Luck · 세운</h3>
+            <div className="daeun">
+              {chart.saeun.map((s) => (
+                <div
+                  className={`daeun-cell${s.year === chart.currentSaeun.year ? ' now' : ''}`}
+                  key={s.year}
+                >
+                  <div className="age">{s.year}</div>
+                  <div className="dchar" style={{ background: ELEMENT_COLORS[s.stem.element] }}>
+                    {s.stem.han}
+                  </div>
+                  <div className="dchar" style={{ background: ELEMENT_COLORS[s.branch.element] }}>
+                    {s.branch.han}
+                  </div>
+                  <div className="dgod">{s.tenGod.en}</div>
                 </div>
               ))}
             </div>

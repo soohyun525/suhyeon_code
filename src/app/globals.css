@@ -210,6 +210,109 @@ select:focus {
   color: #0b0d18;
   font-weight: 700;
 }
+.pillar .god {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 4px 0;
+}
+.pillar .god.top {
+  color: var(--accent);
+  font-weight: 700;
+}
+.pillar .char {
+  width: 46px;
+  height: 46px;
+  line-height: 46px;
+  margin: 4px auto;
+  border-radius: 10px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0b0d18;
+}
+.pillar .meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.pillar .hidden {
+  font-size: 12px;
+  color: #7f87b3;
+  margin-top: 4px;
+  letter-spacing: 2px;
+}
+.legend {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+.kr-sm {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Spirit stars */
+.sinsal {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.sinsal-item {
+  background: #11142b;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.sinsal-item b {
+  display: block;
+  color: var(--accent-2);
+  margin-bottom: 2px;
+}
+.sinsal-item span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Luck cycles (대운 / 세운) */
+.daeun {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.daeun-cell {
+  flex: 0 0 auto;
+  width: 64px;
+  text-align: center;
+  background: #11142b;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 4px;
+}
+.daeun-cell.now {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.daeun-cell .age {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.daeun-cell .dchar {
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  margin: 3px auto;
+  border-radius: 7px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0b0d18;
+}
+.daeun-cell .dgod {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
 
 /* Element bars */
 .bars {
