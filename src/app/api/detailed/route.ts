@@ -5,7 +5,7 @@ import { parseBirthData } from '@/lib/validate';
 import { stripe, stripeEnabled } from '@/lib/stripe';
 
 export const runtime = 'nodejs';
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   let body: any;

@@ -212,7 +212,7 @@ Now go deep — same warm, friend-to-friend voice, talking directly to them. Thi
 - "luckyElements": which elements to strengthen or balance, with concrete everyday suggestions (colors, directions, activities, seasons).
 - "advice": 4–6 practical, uplifting pieces of life guidance.`;
   try {
-    return JSON.parse(await callClaude(prompt, DETAILED_SCHEMA, 9000)) as DetailedReading;
+    return JSON.parse(await callClaude(prompt, DETAILED_SCHEMA, 6000)) as DetailedReading;
   } catch {
     return fallbackDetailed(chart);
   }

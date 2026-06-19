@@ -59,6 +59,24 @@ npm run dev                  # http://localhost:3000
 Both keys are optional: the app is fully functional for local development
 without them, degrading gracefully (templated reading, demo unlock).
 
+## Deploy (Vercel)
+
+This is a standard Next.js app — Vercel auto-detects it, no `vercel.json` needed.
+
+1. Push the branch to GitHub (already done).
+2. In [vercel.com](https://vercel.com) → **Add New → Project** → import this repo.
+3. Under **Settings → Git**, set the **Production Branch** to the branch that has
+   the app (e.g. `claude/saju-destiny-webpage-38tzlr`), or merge it into `main`.
+4. Add **Environment Variables**:
+   - `ANTHROPIC_API_KEY` — for AI interpretation (without it, a templated reading is served).
+   - `STRIPE_SECRET_KEY` — for real payments (without it, the premium report is demo-unlocked).
+   - `DETAILED_READING_PRICE_CENTS` (optional, default `900`).
+5. **Deploy**. You get a `https://<project>.vercel.app` URL.
+
+The AI routes set `maxDuration = 60`. The detailed report is a large generation;
+on the Vercel **Hobby** plan (60s function cap) it usually fits, but for headroom
+use **Pro** (raise `maxDuration` up to 300) or shorten the detailed prompt.
+
 ## Notes
 
 - The day boundary is taken at local midnight. The classic 야자시/조자시 edge
