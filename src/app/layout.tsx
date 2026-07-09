@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Jua, Baloo_2 } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 
 // Chunky rounded fonts for the MapleStory-style cartoon UI.
@@ -11,6 +12,7 @@ const DESC =
   'The 1,000-year-old Korean cosmic personality read. Meet your Saju type — Main Character Sun? Moonlight Mist? — from your exact birth moment, read to you like a bestie. Free.';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: TITLE,
   description: DESC,
   openGraph: {
@@ -29,7 +31,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${jua.variable} ${baloo.variable}`}>{children}</body>
+      <body className={`${jua.variable} ${baloo.variable}`}>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

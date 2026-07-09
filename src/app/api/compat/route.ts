@@ -4,11 +4,15 @@ import { computeCompat } from '@/lib/saju/compat';
 import { archetypeForStem } from '@/lib/saju/archetypes';
 import { generateCompatReading } from '@/lib/ai';
 import { parseBirthData } from '@/lib/validate';
+import { rateLimit, clientKey } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  if (!rateLimit(`compat:${clientKey(req)}`, 10)) {
+    return NextResponse.json({ error: 'Too many match checks — try again in a minute 💘' }, { status: 429 });
+  }
   let body: any;
   try {
     body = await req.json();

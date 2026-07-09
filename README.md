@@ -77,6 +77,37 @@ The AI routes set `maxDuration = 60`. The detailed report is a large generation;
 on the Vercel **Hobby** plan (60s function cap) it usually fits, but for headroom
 use **Pro** (raise `maxDuration` up to 300) or shorten the detailed prompt.
 
+## Production launch checklist
+
+**Must-do before real traffic:**
+
+- [ ] **Anthropic**: fresh `ANTHROPIC_API_KEY` (rotate anything ever pasted in chat/logs),
+      set a monthly **spend limit** in the Anthropic console, watch usage the first days.
+- [ ] **Stripe**: switch to **live** keys (`sk_live_...`), set `STRIPE_SECRET_KEY`,
+      confirm a real test purchase end-to-end, enable Stripe Radar defaults.
+- [ ] **Env vars on Vercel**: `ANTHROPIC_API_KEY`, `STRIPE_SECRET_KEY`,
+      `NEXT_PUBLIC_BASE_URL=https://<your-domain>` (drives OG tags, robots, sitemap,
+      Stripe redirects), optionally `DETAILED_READING_PRICE_CENTS`.
+- [ ] **Domain**: add a custom domain in Vercel; keep it short (it appears on every
+      shared photocard footer — consider updating the footer text in
+      `src/lib/cardCanvas.ts` / `ShareCard.tsx` to the real domain).
+- [ ] **Production branch**: point Vercel at the branch you deploy (or merge to `master`).
+
+**Built-in already:** per-IP rate limits on the AI endpoints (10/min readings &
+matches, 5/min premium), server-side payment verification, input validation,
+robots.txt + sitemap + favicon + OG tags, Vercel Analytics (zero-config on Vercel).
+
+**When traffic grows:**
+
+- Swap the in-memory rate limiter (`src/lib/ratelimit.ts`) for Upstash Redis —
+  the in-memory one is per-serverless-instance (best-effort).
+- Watch Anthropic cost per reading; consider caching identical birth inputs or
+  a queue during spikes. Premium margin covers costs from ~2% conversion.
+- Vercel Hobby caps functions at 60s — the detailed reading fits but has little
+  headroom; upgrade to Pro (300s cap) once revenue starts.
+- Add real analytics events (reading created / photocard saved / caption copied /
+  checkout started) to track the viral metrics in `VIRAL_STRATEGY.md`.
+
 ## Notes
 
 - The day boundary is taken at local midnight. The classic 야자시/조자시 edge

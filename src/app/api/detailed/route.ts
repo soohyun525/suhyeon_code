@@ -3,11 +3,15 @@ import { computeChart, type BirthData } from '@/lib/saju/calculator';
 import { generateDetailedReading } from '@/lib/ai';
 import { parseBirthData } from '@/lib/validate';
 import { stripe, stripeEnabled } from '@/lib/stripe';
+import { rateLimit, clientKey } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  if (!rateLimit(`detailed:${clientKey(req)}`, 5)) {
+    return NextResponse.json({ error: 'Too many requests — try again in a minute ✨' }, { status: 429 });
+  }
   let body: any;
   try {
     body = await req.json();

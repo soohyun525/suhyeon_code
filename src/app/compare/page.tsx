@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { TIMEZONES } from '@/lib/timezones';
 import { decodeBirth, type CompactBirth } from '@/lib/encode';
+import CompatCard from '@/components/CompatCard';
 
 interface LitePerson {
   name: string | null;
@@ -251,6 +252,16 @@ export default function ComparePage() {
                 </div>
               ))}
             </div>
+
+            <CompatCard
+              data={{
+                a: result.a,
+                b: result.b,
+                score: result.score,
+                label: result.label,
+                verdict: result.reading.verdict,
+              }}
+            />
           </section>
 
           <section className="card reading">

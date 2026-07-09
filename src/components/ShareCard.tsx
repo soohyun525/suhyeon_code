@@ -1,10 +1,19 @@
 'use client';
 
-// The viral loop: render the user's result as a K-pop-photocard-style image
+// The viral loop: render the user's result as a photocard-style image
 // (1080×1350, IG/TikTok-friendly) entirely client-side on a <canvas>, then
 // let them save / share it with one tap.
 
 import { useCallback, useState } from 'react';
+import {
+  BROWN,
+  EL_COLORS,
+  roundRect,
+  wrapText,
+  outlined,
+  drawCardBase,
+  saveCanvas,
+} from '@/lib/cardCanvas';
 
 interface PillarLite {
   stem: { han: string; element: string };
@@ -21,101 +30,15 @@ export interface ShareCardData {
   shareLine?: string;
 }
 
-const EL_COLORS: Record<string, string> = {
-  Wood: '#58c15e',
-  Fire: '#ff7043',
-  Earth: '#ffb830',
-  Metal: '#9fb2bd',
-  Water: '#4fc3f7',
-};
-
 const W = 1080;
 const H = 1350;
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let line = '';
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  return lines;
-}
-
-function cloud(ctx: CanvasRenderingContext2D, x: number, y: number, s: number) {
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  const blobs: [number, number, number][] = [
-    [0, 0, 46], [40, -14, 36], [-42, -10, 34], [78, 2, 30], [-78, 4, 28],
-  ];
-  for (const [dx, dy, r] of blobs) {
-    ctx.beginPath();
-    ctx.arc(x + dx * s, y + dy * s, r * s, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-const BROWN = '#5f4023';
-
-function outlined(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  fill: string,
-  strokeW: number,
-) {
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = BROWN;
-  ctx.lineWidth = strokeW;
-  ctx.strokeText(text, x, y);
-  ctx.fillStyle = fill;
-  ctx.fillText(text, x, y);
-}
 
 function drawCard(canvas: HTMLCanvasElement, d: ShareCardData) {
   const ctx = canvas.getContext('2d')!;
   canvas.width = W;
   canvas.height = H;
 
-  // ── Background: cartoon sky + grass ──
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#7ec9f4');
-  bg.addColorStop(0.6, '#c9ecff');
-  bg.addColorStop(1, '#bfe7a1');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-  cloud(ctx, 170, 150, 1);
-  cloud(ctx, 900, 240, 1.25);
-  cloud(ctx, 250, 1180, 0.9);
-
-  // ── Cream signboard panel ──
-  ctx.fillStyle = 'rgba(95,64,35,0.3)';
-  roundRect(ctx, 60, 74, W - 120, H - 134, 40);
-  ctx.fill();
-  ctx.fillStyle = '#fff6dd';
-  roundRect(ctx, 60, 60, W - 120, H - 134, 40);
-  ctx.fill();
-  ctx.strokeStyle = BROWN;
-  ctx.lineWidth = 9;
-  roundRect(ctx, 60, 60, W - 120, H - 134, 40);
-  ctx.stroke();
+  drawCardBase(ctx, W, H);
 
   // ── Header ──
   ctx.textAlign = 'center';
@@ -226,32 +149,16 @@ export default function ShareCard({ data }: { data: ShareCardData }) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const makeBlob = useCallback(async (): Promise<Blob> => {
-    const canvas = document.createElement('canvas');
-    drawCard(canvas, data);
-    return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
-  }, [data]);
-
   const save = useCallback(async () => {
     setBusy(true);
     try {
-      const blob = await makeBlob();
-      const file = new File([blob], 'my-saju-type.png', { type: 'image/png' });
-      // Native share sheet on mobile (IG/TikTok stories in one tap), download on desktop.
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'My Saju Type' }).catch(() => {});
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'my-saju-type.png';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+      const canvas = document.createElement('canvas');
+      drawCard(canvas, data);
+      await saveCanvas(canvas, 'my-saju-type.png', 'My Saju Type');
     } finally {
       setBusy(false);
     }
-  }, [makeBlob]);
+  }, [data]);
 
   const copyCaption = useCallback(async () => {
     const caption = `${data.archetype.emoji} I'm ${data.archetype.name} — ${data.shareLine || data.archetype.tagline}\nwhat's your saju type? ✨`;
