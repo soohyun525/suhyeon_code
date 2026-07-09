@@ -5,11 +5,11 @@ import { TIMEZONES } from '@/lib/timezones';
 import ShareCard from '@/components/ShareCard';
 
 const ELEMENT_COLORS: Record<string, string> = {
-  Wood: '#34e39a',
-  Fire: '#ff5d73',
-  Earth: '#ffc94d',
-  Metal: '#cdd7e4',
-  Water: '#4dc3ff',
+  Wood: '#58c15e',
+  Fire: '#ff7043',
+  Earth: '#ffb830',
+  Metal: '#9fb2bd',
+  Water: '#4fc3f7',
 };
 const ELEMENTS = ['Wood', 'Fire', 'Earth', 'Metal', 'Water'];
 
@@ -103,6 +103,7 @@ export default function Home() {
   const [free, setFree] = useState<FreeReading | null>(null);
 
   const [unlocking, setUnlocking] = useState(false);
+  const [compatCopied, setCompatCopied] = useState(false);
   const [detailed, setDetailed] = useState<DetailedReading | null>(null);
   const [detailError, setDetailError] = useState('');
 
@@ -598,6 +599,27 @@ export default function Home() {
               <div className="demo-note">Secure checkout via Stripe.</div>
             </section>
           )}
+
+          {/* 궁합 — friend compatibility (the viral loop) */}
+          <section className="compat-cta">
+            <h2>💘 Check your 궁합 with a friend</h2>
+            <p>
+              Send your match link — they drop their birth time, and you both find out if
+              you&apos;re written in the stars (or a chaotic duo).
+            </p>
+            <button
+              className="btn"
+              onClick={async () => {
+                const { encodeBirth } = await import('@/lib/encode');
+                const link = `${window.location.origin}/compare?me=${encodeBirth(form)}`;
+                await navigator.clipboard.writeText(link);
+                setCompatCopied(true);
+                setTimeout(() => setCompatCopied(false), 1800);
+              }}
+            >
+              {compatCopied ? '✓ Link copied — send it!' : '🔗 Copy my match link'}
+            </button>
+          </section>
         </>
       )}
 

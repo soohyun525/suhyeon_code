@@ -227,6 +227,73 @@ Now go deep — same warm, friend-to-friend voice, talking directly to them. Thi
   }
 }
 
+// ── Compatibility (궁합) reading — free, it IS the viral loop ────────────────
+
+export interface CompatReading {
+  vibe: string;
+  strengths: string;
+  watchouts: string;
+  verdict: string;
+}
+
+const COMPAT_SCHEMA = {
+  type: 'object',
+  properties: {
+    vibe: { type: 'string' },
+    strengths: { type: 'string' },
+    watchouts: { type: 'string' },
+    verdict: { type: 'string' },
+  },
+  required: ['vibe', 'strengths', 'watchouts', 'verdict'],
+  additionalProperties: false,
+};
+
+export async function generateCompatReading(
+  a: SajuChart,
+  b: SajuChart,
+  score: number,
+  factors: { label: string; detail: string; delta: number }[],
+): Promise<CompatReading> {
+  const an = a.birth.name || 'Person A';
+  const bn = b.birth.name || 'Person B';
+  if (!client) return fallbackCompat(a, b, an, bn);
+
+  const brief = (c: SajuChart, n: string) => {
+    const arch = archetypeForStem(c.pillars.day.stemIndex);
+    return `${n}: Day Master ${c.dayMaster.rom} (${c.dayMaster.han}) — ${c.dayMaster.yin ? 'Yin' : 'Yang'} ${c.dayMaster.element}; type ${arch.emoji} "${arch.name}"; zodiac ${c.zodiacAnimal}; dominant ${c.dominantElement}; missing ${c.lackingElements.join(', ') || 'none'}.`;
+  };
+
+  const prompt = `Two friends are checking their 궁합 (Saju compatibility). You know both charts:
+
+${brief(a, an)}
+${brief(b, bn)}
+
+Computed compatibility score: ${score}/100.
+Factors found:
+${factors.map((f) => `- [${f.delta > 0 ? '+' : ''}${f.delta}] ${f.label}: ${f.detail}`).join('\n')}
+
+Talk to BOTH of them at once ("you two"), warm and playful, like the friend who knows them both. Ground everything in the factors above — no generic fluff. Keep each field to one tight paragraph (2–4 sentences):
+- "vibe": the overall energy of this pair — what it feels like when they're together.
+- "strengths": what genuinely works between these two charts.
+- "watchouts": the friction points, said kindly but honestly.
+- "verdict": a fun closing verdict that matches the score — quotable, screenshot-worthy.`;
+
+  try {
+    return JSON.parse(await callClaude(prompt, COMPAT_SCHEMA, 2000)) as CompatReading;
+  } catch {
+    return fallbackCompat(a, b, an, bn);
+  }
+}
+
+function fallbackCompat(a: SajuChart, b: SajuChart, an: string, bn: string): CompatReading {
+  return {
+    vibe: `${an}'s ${a.dayMaster.element} energy meets ${bn}'s ${b.dayMaster.element} — a ${a.dayMaster.element === b.dayMaster.element ? 'mirror match' : 'contrast pairing'} with its own rhythm. (Templated — add an ANTHROPIC_API_KEY for the full AI read.)`,
+    strengths: `Where one chart runs strong, the other has room — that's usually where this pair helps each other most.`,
+    watchouts: `The same contrast that makes it interesting can cause static when you're both tired — name it early.`,
+    verdict: `Every pairing in Saju is workable — this one included. The chart shows the weather; you two steer the ship.`,
+  };
+}
+
 // ── Offline / no-key fallbacks (templated, clearly non-AI) ──────────────────
 function fallbackFree(chart: SajuChart): FreeReading {
   const dm = chart.dayMaster;

@@ -1,5 +1,10 @@
 import type { Metadata } from 'next';
+import { Jua, Baloo_2 } from 'next/font/google';
 import './globals.css';
+
+// Chunky rounded fonts for the MapleStory-style cartoon UI.
+const jua = Jua({ weight: '400', subsets: ['latin'], variable: '--font-head' });
+const baloo = Baloo_2({ subsets: ['latin'], variable: '--font-body' });
 
 const TITLE = 'Saju ✨ What’s Your K-Destiny Type?';
 const DESC =
@@ -24,7 +29,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={`${jua.variable} ${baloo.variable}`}>{children}</body>
     </html>
   );
 }
