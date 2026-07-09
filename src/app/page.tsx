@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { TIMEZONES } from '@/lib/timezones';
+import ShareCard from '@/components/ShareCard';
 
 const ELEMENT_COLORS: Record<string, string> = {
-  Wood: '#3a9d6e',
-  Fire: '#d8503a',
-  Earth: '#c79a3e',
-  Metal: '#9aa3ad',
-  Water: '#3b6fb6',
+  Wood: '#34e39a',
+  Fire: '#ff5d73',
+  Earth: '#ffc94d',
+  Metal: '#cdd7e4',
+  Water: '#4dc3ff',
 };
 const ELEMENTS = ['Wood', 'Fire', 'Earth', 'Metal', 'Water'];
 
@@ -41,6 +42,7 @@ interface Chart {
   zodiacAnimal: string;
   hasHour: boolean;
   dayMaster: { han: string; rom: string; element: string; yin: boolean };
+  archetype: { key: string; emoji: string; name: string; tagline: string; vibe: string };
   elementCounts: Record<string, number>;
   dominantElement: string;
   lackingElements: string[];
@@ -52,6 +54,7 @@ interface Chart {
 }
 
 interface FreeReading {
+  shareLine: string;
   overview: string;
   personality: {
     summary: string;
@@ -202,14 +205,14 @@ export default function Home() {
   return (
     <div className="wrap">
       <header className="hero">
-        <div className="mark">Korean Destiny Reading</div>
+        <div className="mark">✦ your k-destiny era ✦</div>
         <h1>
           Saju <span className="kr">사주</span>
         </h1>
         <p>
-          Like having a friend who reads <b>Saju</b> — the Korean <b>Four Pillars of Destiny</b> —
-          tell you what they see in your chart. We work it out from the traditional{' '}
-          <i>Manseryeok</i> calendar and read it back to you, warmly, in plain English.
+          Your birth chart, but make it <b>K</b> ✨ — the 1,000-year-old Korean cosmic
+          personality read. Drop your birth time, meet your <b>Saju type</b>, and get read
+          like your bestie has known you for lifetimes.
         </p>
       </header>
 
@@ -334,6 +337,25 @@ export default function Home() {
 
       {chart && free && (
         <>
+          {/* Saju type hero — the shareable identity */}
+          <section className="type-hero">
+            <div className="te">{chart.archetype.emoji}</div>
+            <div className="tn">{chart.archetype.name}</div>
+            <div className="tt">{chart.archetype.tagline}</div>
+            {free.shareLine && <p className="share-line">{free.shareLine}</p>}
+            <ShareCard
+              data={{
+                name: form.name || undefined,
+                archetype: chart.archetype,
+                dayMaster: chart.dayMaster,
+                zodiacAnimal: chart.zodiacAnimal,
+                elementCounts: chart.elementCounts,
+                pillars: chart.pillars,
+                shareLine: free.shareLine,
+              }}
+            />
+          </section>
+
           {/* Chart */}
           <section className="card">
             <h2>Your Four Pillars</h2>
@@ -555,22 +577,22 @@ export default function Home() {
           ) : (
             <section className="paywall">
               <div className="mark" style={{ color: 'var(--accent)' }}>
-                Go Deeper
+                ✦ unlock your full lore ✦
               </div>
-              <h2 style={{ margin: '6px 0' }}>Detailed Destiny Report</h2>
+              <h2 style={{ margin: '6px 0' }}>The Full Destiny Report</h2>
               <div className="price">
-                $9 <small>· one-time</small>
+                $9 <small>· one-time, yours forever</small>
               </div>
               <ul>
-                <li>Your {new Date().getFullYear()} fortune, in detail</li>
-                <li>Compatibility — who lifts you up, who clashes</li>
-                <li>Your benefactors (귀인) &amp; situations to avoid</li>
-                <li>Career, wealth, love, health &amp; life-phase forecast</li>
-                <li>Your lucky elements &amp; personalized guidance</li>
+                <li>Your {new Date().getFullYear()} forecast — is it your year or nah</li>
+                <li>Compatibility — who lifts you up, who drains your battery</li>
+                <li>Your 귀인 (destined allies) &amp; the red flags to walk away from</li>
+                <li>Career, money, love, health &amp; your life-era timeline</li>
+                <li>Your lucky elements — colors, seasons, moves that hit different</li>
               </ul>
               <button className="btn secondary" onClick={startCheckout} disabled={unlocking}>
-                {unlocking ? <span className="spinner" /> : '🔓'}{' '}
-                {unlocking ? 'Preparing…' : 'Unlock the full reading'}
+                {unlocking ? <span className="spinner" /> : '🔮'}{' '}
+                {unlocking ? 'Reading the stars…' : 'Unlock my full reading'}
               </button>
               {detailError && <div className="error">{detailError}</div>}
               <div className="demo-note">Secure checkout via Stripe.</div>

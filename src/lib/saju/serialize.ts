@@ -1,4 +1,5 @@
 import type { SajuChart, Pillar } from './calculator';
+import { archetypeForStem } from './archetypes';
 
 // A lean, UI-ready view of a chart (no internal types leaked to the client).
 export function serializeChart(chart: SajuChart) {
@@ -28,6 +29,7 @@ export function serializeChart(chart: SajuChart) {
       element: chart.dayMaster.element,
       yin: chart.dayMaster.yin,
     },
+    archetype: archetypeForStem(chart.pillars.day.stemIndex),
     elementCounts: chart.elementCounts,
     dominantElement: chart.dominantElement,
     lackingElements: chart.lackingElements,

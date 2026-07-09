@@ -5,12 +5,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ELEMENT_TRAITS, STEMS, BRANCHES } from './saju/constants';
 import { pillarLabel, type SajuChart } from './saju/calculator';
+import { archetypeForStem } from './saju/archetypes';
 
 const MODEL = 'claude-opus-4-8';
 const apiKey = process.env.ANTHROPIC_API_KEY;
 const client = apiKey ? new Anthropic({ apiKey }) : null;
 
 export interface FreeReading {
+  shareLine: string; // one spicy, postable sentence about them
   overview: string;
   personality: {
     summary: string;
@@ -40,6 +42,7 @@ const SYSTEM = `You are the reader's close friend who happens to know Korean Saj
 
 Voice:
 - Talk TO them, warmly and directly, in second person ("you"). Use their name if given. Sound like a real friend, not a textbook or a fortune-cookie machine — curious, affectionate, a little playful, genuinely excited to share what you see.
+- Your audience lives on TikTok and loves K-pop and astrology memes. A light Gen-Z internet-native energy is welcome (e.g. "main character", "lowkey", "era") — but sparingly, like seasoning; never forced, never more than a couple per section.
 - Use natural, conversational English. When a Korean/Chinese term slips in, explain it casually like you would to a friend ("your Day Master — basically 'you' in the chart").
 - React to what's actually in their chart (specific pillars, the Day Master, the element balance). Point things out like you noticed them: "see how Fire shows up twice? that tracks with…". Make it feel personal and observed, never generic.
 - Be encouraging and honest. Name the tricky parts gently, the way a good friend would — as something to grow into, not a verdict.
@@ -79,6 +82,10 @@ function chartContext(chart: SajuChart): string {
     `Day Master (일간, "the self"): ${chart.dayMaster.rom} (${chart.dayMaster.han}) — ${
       chart.dayMaster.yin ? 'Yin' : 'Yang'
     } ${chart.dayMaster.element}. Symbolism: ${ELEMENT_TRAITS[chart.dayMaster.element]}.`,
+    (() => {
+      const a = archetypeForStem(chart.pillars.day.stemIndex);
+      return `Their Saju type (our shareable archetype for this Day Master): ${a.emoji} "${a.name}" — ${a.tagline}. Reference it naturally once or twice.`;
+    })(),
     '',
     'Five-element balance (오행):',
     ...Object.entries(chart.elementCounts).map(([el, n]) => `  ${el}: ${n}`),
@@ -105,6 +112,7 @@ function chartContext(chart: SajuChart): string {
 const FREE_SCHEMA = {
   type: 'object',
   properties: {
+    shareLine: { type: 'string' },
     overview: { type: 'string' },
     personality: {
       type: 'object',
@@ -120,7 +128,7 @@ const FREE_SCHEMA = {
     },
     elementNote: { type: 'string' },
   },
-  required: ['overview', 'personality', 'elementNote'],
+  required: ['shareLine', 'overview', 'personality', 'elementNote'],
   additionalProperties: false,
 };
 
@@ -177,6 +185,7 @@ export async function generateFreeReading(chart: SajuChart): Promise<FreeReading
   const prompt = `${chartContext(chart)}
 
 Read this for them like a friend would, in the warm second-person voice. Return a FREE-TIER reading with a genuinely useful personality picture:
+- "shareLine": ONE postable sentence (max ~120 chars) that captures them so precisely it's almost unfair — spicy, specific to THEIR chart, screenshot-worthy. No hashtags, no emoji. Think "the caption they'd post". Written in second person.
 - "overview": 2–3 short paragraphs easing them in — what their chart feels like at a glance, who their Day Master makes them, and what the Four Pillars are (explained casually). Talk to them, not about them.
 - "personality":
     - "summary": a conversational paragraph describing who they are, like you're describing them to their face.
@@ -224,6 +233,7 @@ function fallbackFree(chart: SajuChart): FreeReading {
   const trait = ELEMENT_TRAITS[dm.element];
   const traitWords = trait.split(', ').map((t) => t.charAt(0).toUpperCase() + t.slice(1));
   return {
+    shareLine: `You lead with ${trait.split(', ')[0]} and everyone around you can feel it.`,
     overview: `Your Four Pillars center on a ${dm.yin ? 'Yin' : 'Yang'} ${dm.element} Day Master (${dm.rom}, ${dm.han}) — this is "the self" in Saju, the lens through which your whole chart is read. Your year branch makes you a ${chart.zodiacAnimal}. The Four Pillars (year, month, day, hour) map the seasons of your life: ancestry and early years, family and growth, your core self and partnerships, and your later years and legacy.\n\n(This is a templated reading. Add an ANTHROPIC_API_KEY to unlock AI-generated interpretation.)`,
     personality: {
       summary: `As a ${dm.element} Day Master, your nature leans toward ${trait}. Your chart's dominant element is ${chart.dominantElement}, which colors how you meet the world.`,
