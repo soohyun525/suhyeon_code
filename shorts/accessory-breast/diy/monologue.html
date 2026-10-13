@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Monologue short</title>
+<style>
+  @font-face { font-family: Jua; src: url('fonts/Jua.ttf'); }
+  @font-face { font-family: BHS; src: url('fonts/BlackHanSans.ttf'); }
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  #stage { width: 1080px; height: 1920px; display: block; }
+  text { font-family: Jua, sans-serif; }
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg"></svg>
+<script src="lib.js"></script>
+<script>
+// ───────────────────────── sets ─────────────────────────
+function room(t) {
+  let s = `<rect width="1080" height="1920" fill="#EFE4F8"/>`;
+  for (let i = 0; i < 10; i++) for (let j = 0; j < 16; j++)
+    if ((i + j) % 2 === 0) s += `<rect x="${i * 110}" y="${j * 120}" width="110" height="120" fill="#E8DAF4"/>`;
+  // fairy lights
+  s += `<path d="M-20 420 Q270 520 540 430 Q810 340 1100 450" stroke="#8C7A9E" stroke-width="4" fill="none"/>`;
+  const cols = ['#FFD23F', '#FF8FAB', '#7CC8FF', '#9BE7A0'];
+  for (let i = 0; i < 12; i++) {
+    const x = -20 + i * 100, k = i / 11;
+    const y = k < 0.5 ? lerp(420, 430, k * 2) + Math.sin(k * 2 * Math.PI) * 60 : lerp(430, 450, (k - 0.5) * 2) - Math.sin((k - 0.5) * 2 * Math.PI) * 60;
+    const on = 0.55 + 0.45 * Math.sin(t * 4 + i * 1.7);
+    s += `<circle cx="${x}" cy="${y + 18}" r="${26 * on}" fill="${cols[i % 4]}" opacity=".35"/><circle cx="${x}" cy="${y + 18}" r="11" fill="${cols[i % 4]}"/>`;
+  }
+  // frame + shelf
+  s += `<rect x="70" y="620" width="200" height="250" rx="10" fill="#fff" stroke="#C9A27A" stroke-width="14"/>`;
+  s += `<path d="M95 830 L150 720 L195 790 L220 760 L250 830 Z" fill="#9BE7A0"/><circle cx="215" cy="690" r="22" fill="#FFD23F"/>`;
+  s += `<rect x="790" y="800" width="260" height="22" fill="#C9A27A"/>`;
+  [['#FF8FAB', 40], ['#7CC8FF', 32], ['#FFD23F', 44], ['#9BE7A0', 30]].forEach(([c, w], i) => {
+    s += `<rect x="${810 + i * 48}" y="${800 - 110 + (i % 2) * 15}" width="${w}" height="${110 - (i % 2) * 15}" rx="5" fill="${c}"/>`;
+  });
+  s += `<rect x="1000" y="740" width="44" height="60" rx="8" fill="#E39B6B"/><ellipse cx="1022" cy="720" rx="34" ry="30" fill="#5DBB7A"/>`;
+  return s;
+}
+
+function bathroom(t) {
+  let s = `<rect width="1080" height="1920" fill="#CFEFF0"/>`;
+  for (let i = 0; i <= 1080; i += 120) s += `<line x1="${i}" y1="0" x2="${i}" y2="1920" stroke="#B4E0E2" stroke-width="5"/>`;
+  for (let j = 0; j <= 1920; j += 120) s += `<line x1="0" y1="${j}" x2="1080" y2="${j}" stroke="#B4E0E2" stroke-width="5"/>`;
+  // shower head + water
+  s += `<path d="M960 380 L960 470 Q960 500 900 520" stroke="#9AA9B8" stroke-width="16" fill="none" stroke-linecap="round"/>`;
+  s += `<ellipse cx="880" cy="530" rx="60" ry="22" fill="#B8C4CF"/>`;
+  for (let i = 0; i < 14; i++) {
+    const k = (t * 1.8 + i / 14) % 1;
+    s += `<line x1="${840 + (i % 7) * 13}" y1="${560 + k * 500}" x2="${836 + (i % 7) * 13}" y2="${590 + k * 500}" stroke="#7CC8FF" stroke-width="6" stroke-linecap="round" opacity="${1 - k}"/>`;
+  }
+  return s;
+}
+
+function steam(t) {
+  let s = '';
+  for (let i = 0; i < 6; i++) {
+    const k = (t * 0.25 + i / 6) % 1;
+    s += `<circle cx="${(i * 211) % 1080}" cy="${1500 - k * 900}" r="${90 + (i % 3) * 40}" fill="#fff" opacity="${0.35 * Math.sin(k * Math.PI)}"/>`;
+  }
+  return s;
+}
+
+function rec(t) {
+  const on = Math.floor(t * 2) % 2 === 0;
+  return `<g transform="translate(60 390)"><rect width="150" height="56" rx="12" fill="#000" opacity=".45"/>`
+    + `<circle cx="32" cy="28" r="12" fill="#FF3B3B" opacity="${on ? 1 : 0.25}"/><text x="56" y="40" font-size="34" fill="#fff">REC</text></g>`;
+}
+
+// Camera: zoom around a focus point.
+const cam = (z, fx = 540, fy = 1000, body = '') => `<g transform="translate(${fx} ${fy}) scale(${z}) translate(${-fx} ${-fy})">${body}</g>`;
+
+function sticker(x, y, text, p, rot = -8, bg = '#FF3B5C', size = 64) {
+  const w = text.length * size * 0.9 + 70;
+  return `<g transform="translate(${x} ${y}) scale(${p}) rotate(${rot})"><rect x="${-w / 2}" y="${-size * 0.95}" width="${w}" height="${size * 1.5}" rx="${size * 0.75}" fill="${bg}" stroke="#fff" stroke-width="8"/>`
+    + `<text x="0" y="${size * 0.25}" font-size="${size}" text-anchor="middle" fill="#fff">${esc(text)}</text></g>`;
+}
+
+function kks(t, n = 10, seed = 1) {
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const k = (t * 1.3 + i / n) % 1;
+    const x = ((i * 397 + seed * 131) % 900) + 90, y = 1400 - k * 900;
+    s += `<g transform="translate(${x} ${y}) rotate(${(i % 2 ? 1 : -1) * 15}) scale(${0.8 + (i % 3) * 0.3})" opacity="${Math.sin(k * Math.PI)}">${outlined(0, 0, 'ㅋ', 110, ['#FFD23F', '#FF8FAB', '#7CC8FF'][i % 3], '#1B1B1F', 12, 'BHS')}</g>`;
+  }
+  return s;
+}
+
+function dogFilter(x, y, s) {
+  return `<g transform="translate(${x} ${y}) scale(${s})">`
+    + `<ellipse cx="-125" cy="-650" rx="48" ry="95" fill="#8B5A3C" transform="rotate(-25 -125 -650)"/>`
+    + `<ellipse cx="125" cy="-650" rx="48" ry="95" fill="#8B5A3C" transform="rotate(25 125 -650)"/>`
+    + `<ellipse cx="-125" cy="-640" rx="24" ry="60" fill="#E8A9A0" transform="rotate(-25 -125 -640)"/>`
+    + `<ellipse cx="125" cy="-640" rx="24" ry="60" fill="#E8A9A0" transform="rotate(25 125 -640)"/>`
+    + `<ellipse cx="0" cy="-497" rx="26" ry="18" fill="#222"/><circle cx="-8" cy="-502" r="6" fill="#fff" opacity=".7"/></g>`;
+}
+
+function bigArrow(x, y, p, rot) {
+  return `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${p})"><path d="M0 0 L-70 -60 L-30 -60 L-30 -200 L30 -200 L30 -60 L70 -60 Z" fill="#FF3B3B" stroke="#fff" stroke-width="10" stroke-linejoin="round"/></g>`;
+}
+
+function toast(y, title, body, k) {
+  return `<g transform="translate(${lerp(1200, 60, k)} ${y})" opacity="${k}">`
+    + `<rect width="960" height="140" rx="32" fill="#fff" stroke="#E5E5EA" stroke-width="4"/>`
+    + `<circle cx="80" cy="70" r="44" fill="#FFD23F"/>`
+    + `<path d="M80 40 Q55 45 55 75 L50 92 L110 92 L105 75 Q105 45 80 40 Z" fill="#fff"/><circle cx="80" cy="100" r="8" fill="#fff"/>`
+    + `<text x="150" y="58" font-size="34" fill="#8E8E93">${esc(title)}</text>`
+    + `<text x="150" y="112" font-size="46" fill="#1B1B1F">${esc(body)}</text></g>`;
+}
+
+// ───────────────────────── shots ─────────────────────────
+// Each shot gets (t: shot-local time, dur, line) and returns the scene SVG.
+const talkMom = (t, line, o = {}) => mom(Object.assign({ x: 540, y: 1720, s: 1.25, t, mouth: line.mouthAt(t), blink: (t % 2.4) > 2.28 }, o));
+
+const SHOTS = {
+  intro(t, d, line) {
+    const wave = 1 - ease(prog(t, 1.6, 2.0));
+    return cam(1.0, 540, 1000, room(t) + talkMom(t, line, { rPose: 'wave', rK: ease(prog(t, 0, 0.3)) * wave, expr: 'neutral' })) + rec(t);
+  },
+  punch(t, d, line) {
+    const z = 1.45 + 0.04 * Math.sin(t * 30) * Math.exp(-t * 6);
+    let s = room(t) + talkMom(t, line, { rPose: 'up', rK: ease(prog(t, 0, 0.25)), expr: 'neutral' });
+    const p = pop(t, 0.2);
+    const ax = 540 + 118 * 1.25, ay = 1720 - 360 * 1.25;
+    for (let i = 0; i < 4; i++) s += sparkleStar(ax + 60 * Math.cos(i * 1.57 + t * 3), ay + 60 * Math.sin(i * 1.57 + t * 3), 1.3 * p, 1);
+    return cam(z, 560, 1100, s) + sticker(540, 560, '겨드랑이 = 가슴?!', pop(t, 0.35), -6) + rec(t);
+  },
+  laugh(t, d, line) {
+    const sh = Math.sin(t * 40) * 6;
+    return cam(1.0, 540, 1000, room(t) + talkMom(t, line, { x: 540 + sh, expr: 'happy', tilt: Math.sin(t * 18) * 5 })) + kks(t, 9, 1) + rec(t);
+  },
+  shower(t, d, line) {
+    const notice = d - 0.5;
+    const shocked = t > notice;
+    let s = bathroom(t) + mom({ x: 520, y: 1780, s: 1.15, t, rPose: 'up', rK: ease(prog(t, 0.2, 0.7)), lPose: 'down',
+                                expr: shocked ? 'shock' : 'neutral', mouth: 0, tilt: Math.sin(t * 3) * 2 });
+    s += steam(t);
+    if (shocked) {
+      const p = pop(t, notice), cx = 520 + 118 * 1.15, cy = 1780 - 345 * 1.15;
+      s += `<circle cx="${cx}" cy="${cy}" r="${52 * p}" fill="none" stroke="#FF3B5C" stroke-width="9" stroke-dasharray="16 10"/>`;
+      s += sticker(cx + 150, cy - 140, '볼록?!', p, 10);
+    }
+    s += `<g transform="translate(70 400)"><rect width="250" height="76" rx="16" fill="#000" opacity=".5"/><text x="125" y="52" font-size="42" text-anchor="middle" fill="#fff">어느 날…</text></g>`;
+    return cam(lerp(1, 1.08, t / d), 600, 1300, s);
+  },
+  fat(t, d, line) {
+    let s = bathroom(t) + mom({ x: 520, y: 1780, s: 1.15, t, rPose: 'touch', rK: 1, lPose: 'hip', lK: 1, expr: 'worry', mouth: 0 }) + steam(t);
+    const p = pop(t, 0.15);
+    s += `<g transform="translate(800 650) scale(${p})"><ellipse rx="210" ry="120" fill="#fff" stroke="#1B1B1F" stroke-width="6"/>`
+       + `<circle cx="-150" cy="150" r="22" fill="#fff" stroke="#1B1B1F" stroke-width="5"/><circle cx="-185" cy="200" r="12" fill="#fff" stroke="#1B1B1F" stroke-width="4"/>`
+       + `<text x="0" y="-10" font-size="54" text-anchor="middle" fill="#1B1B1F">살 쪘나…?</text>`
+       + `<text x="0" y="60" font-size="46" text-anchor="middle" fill="#E0314F">+3kg??</text></g>`;
+    return s;
+  },
+  squint(t, d, line) {
+    let s = bathroom(t) + mom({ x: 520, y: 1780, s: 1.15, t, rPose: 'up', rK: 1, expr: 'deadpan', mouth: 0, tilt: -4 }) + steam(t);
+    // magnifying glass over the armpit
+    const mx = 520 + 118 * 1.15 + Math.sin(t * 3) * 25, my = 1780 - 345 * 1.15 + Math.cos(t * 2.5) * 20;
+    s += `<g transform="translate(${mx} ${my})"><circle r="95" fill="#E8F7FF" opacity=".45" stroke="#5A3E2B" stroke-width="16"/>`
+       + `<line x1="68" y1="68" x2="170" y2="170" stroke="#5A3E2B" stroke-width="28" stroke-linecap="round"/></g>`;
+    for (const [qx, qy, dd] of [[220, 640, 0.1], [880, 560, 0.4], [300, 480, 0.7]])
+      s += `<g transform="translate(${qx} ${qy}) scale(${pop(t, dd)})">${outlined(0, 0, '?', 120, '#fff', '#1B1B1F', 14, 'BHS')}</g>`;
+    return cam(1.15, 640, 1200, s);
+  },
+  clinic1(t, d, line) {
+    let s = clinicSet(t);
+    s += doctor({ x: 290, y: 1640, s: 0.95, t, expr: 'happy', point: ease(prog(t, 0.1, 0.4)) });
+    s += mom({ x: 800, y: 1780, s: 0.88, t, expr: 'shock' });
+    s += desk();
+    s += `<g transform="translate(540 760) scale(${pop(t, 0.35, 0.3) * 1.0}) rotate(-10)">`
+       + `<rect x="-300" y="-110" width="600" height="200" rx="30" fill="none" stroke="#E0314F" stroke-width="16"/>`
+       + `<text x="0" y="40" font-size="120" text-anchor="middle" fill="#E0314F" font-family="BHS">부유방</text></g>`;
+    return s;
+  },
+  clinic2(t, d, line) {
+    let s = clinicSet(t);
+    const bp = pop(t, 0.05, 0.35);
+    s += `<g transform="translate(540 780) scale(${bp}) translate(-540 -780)">`;
+    s += `<rect x="190" y="420" width="700" height="700" rx="28" fill="#fff" stroke="#8BC6B0" stroke-width="10"/>`;
+    s += `<text x="540" y="500" font-size="50" text-anchor="middle" fill="#2E7D63">유선 조직은 여기까지!</text>`;
+    s += `<g transform="translate(540 820)">`;
+    s += `<circle cx="0" cy="-200" r="55" fill="none" stroke="#9AA9B8" stroke-width="8"/>`;
+    s += `<path d="M-110 -130 Q-135 50 -85 230 L85 230 Q135 50 110 -130 Q0 -160 -110 -130 Z" fill="none" stroke="#9AA9B8" stroke-width="8"/>`;
+    s += `<path d="M-100 -105 Q-68 70 -22 230 M100 -105 Q68 70 22 230" stroke="#FF8FAB" stroke-width="6" stroke-dasharray="12 10" fill="none"/>`;
+    const g = 1 + 0.25 * Math.sin(t * 9) + 0.6 * ease(prog(t, 1.4, 2.2));
+    s += `<circle cx="-102" cy="-102" r="${20 * g}" fill="#FF3B5C" opacity=".85"/><circle cx="102" cy="-102" r="${20 * g}" fill="#FF3B5C" opacity=".85"/>`;
+    s += `</g>`;
+    const k = ease(prog(t, 1.4, 1.8));
+    s += `<g opacity="${k}"><rect x="330" y="1030" width="420" height="70" rx="35" fill="#FF3B5C"/><text x="540" y="1080" font-size="42" text-anchor="middle" fill="#fff">임신 → 커짐!</text></g>`;
+    s += `</g>`;
+    s += doctor({ x: 220, y: 1700, s: 0.75, t, expr: 'happy', point: 1 });
+    s += mom({ x: 860, y: 1800, s: 0.72, t, expr: 'worry' });
+    s += desk();
+    return s;
+  },
+  but(t, d, line) {
+    return cam(1.25, 540, 1000, room(t) + talkMom(t, line, { expr: 'deadpan', blink: false })) + rec(t);
+  },
+  mammal(t, d, line) {
+    const nod = Math.sin(t * 9) * 3;
+    return cam(1.0, 540, 1000, room(t) + talkMom(t, line, { expr: 'neutral', tilt: nod }))
+      + sticker(780, 640, '포유류 인정 ✔', pop(t, 0.2), 8, '#2E7D63', 52) + rec(t);
+  },
+  dog(t, d, line) {
+    let s = room(t) + talkMom(t, line, { expr: 'worry' }) + dogFilter(540, 1720, 1.25);
+    s += dog(900, 1350, 0.9 * pop(t, 0.15));
+    s += sticker(870, 1150, '멍?', pop(t, 0.35), 12, '#8B5A3C', 56);
+    return cam(1.05, 540, 1000, s) + rec(t);
+  },
+  why(t, d, line) {
+    const z = 1.3 + 0.05 * Math.sin(t * 35) * Math.exp(-t * 5);
+    let s = `<rect width="1080" height="1920" fill="#FFDCDC"/>` + room(t).replace('#EFE4F8', '#FFD5D5')
+          + talkMom(t, line, { expr: 'shock', rPose: 'up', rK: 1, lPose: 'touch', lK: ease(prog(t, 0.1, 0.4)) });
+    const ax = 540 + 118 * 1.25, ay = 1720 - 360 * 1.25;
+    s += bigArrow(ax + 35, ay + 30, pop(t, 0.15) * (1 + 0.08 * Math.sin(t * 16)), 135);
+    return cam(z, 600, 1150, s) + sticker(540, 560, '여기까지?!', pop(t, 0.5), -5) + rec(t);
+  },
+  lol(t, d, line) {
+    const sh = Math.sin(t * 45) * 8;
+    return cam(1.1, 540, 1000, room(t) + talkMom(t, line, { x: 540 + sh, expr: 'happy', tilt: Math.sin(t * 20) * 7 })) + kks(t, 14, 2) + rec(t);
+  },
+  feature(t, d, line) {
+    let s = cam(1.0, 540, 1000, room(t) + talkMom(t, line, { expr: 'neutral' }));
+    const items = [['새 기능 발견!', '입덧 모드 ON'], ['새 기능 발견!', '밤마다 다리 쥐'], ['새 기능 발견!', '겨드랑이 부유방']];
+    items.forEach(([a, b], i) => {
+      const k = ease(prog(t, 0.45 + i * 1.0, 0.75 + i * 1.0));
+      if (k > 0) s += toast(380 + i * 165, a, b, k);
+    });
+    return s;
+  },
+  mystic(t, d, line) {
+    let s = `<defs><radialGradient id="gal" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#5B3A9E"/><stop offset=".6" stop-color="#25124F"/><stop offset="1" stop-color="#0B0620"/></radialGradient></defs>`;
+    s += `<rect width="1080" height="1920" fill="url(#gal)"/>`;
+    for (let i = 0; i < 60; i++) {
+      const x = (i * 367) % 1080, y = (i * 709) % 1920, tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 3 + i));
+      s += `<circle cx="${x}" cy="${y}" r="${2 + (i % 3)}" fill="#fff" opacity="${tw}"/>`;
+    }
+    s += `<circle cx="540" cy="1000" r="${420 + 20 * Math.sin(t * 2)}" fill="#FFE9A8" opacity=".12"/>`;
+    s += mom({ x: 540, y: 1750 + Math.sin(t * 2.2) * 25, s: 1.15, t, expr: 'sparkle', mouth: 0, lPose: 'touch', lK: 0.6, rPose: 'touch', rK: 0.6 });
+    for (let i = 0; i < 10; i++) {
+      const k = (t * 0.7 + i / 10) % 1;
+      s += sparkleStar(120 + (i * 97) % 840, 1500 - k * 900, 1.2 + (i % 3) * 0.4, Math.sin(k * Math.PI));
+    }
+    return s;
+  },
+  deadpan(t, d, line) {
+    const z = lerp(1.0, 1.55, ease(prog(t, 0.3, line.end - line.sceneStart + 0.2)));
+    let s = cam(z, 540, 1010, room(t) + talkMom(t, line, { expr: 'deadpan', blink: false }));
+    const endStart = d - 2.4;
+    if (t > endStart) s += endCard(t - endStart);
+    return s;
+  },
+};
+
+function clinicSet(t) {
+  let s = `<rect width="1080" height="1920" fill="#DDF3EA"/>`;
+  s += `<rect x="0" y="1380" width="1080" height="540" fill="#C6E4D8"/>`;
+  s += `<rect x="760" y="420" width="260" height="320" rx="16" fill="#BFE6FF" stroke="#fff" stroke-width="14"/>`;
+  for (let j = 450; j < 730; j += 40) s += `<line x1="770" y1="${j}" x2="1010" y2="${j}" stroke="#fff" stroke-width="6" opacity=".8"/>`;
+  return s;
+}
+function desk() {
+  return `<rect x="-20" y="1500" width="1120" height="70" rx="12" fill="#B98B62"/><rect x="20" y="1560" width="1040" height="360" fill="#A57A55"/>`;
+}
+
+function endCard(t) {
+  const k = ease(prog(t, 0, 0.45));
+  let s = `<rect width="1080" height="1920" fill="#000" opacity="${0.5 * k}"/>`;
+  s += `<g transform="translate(0 ${(1 - k) * 500})" opacity="${k}">`;
+  s += `<rect x="80" y="1000" width="920" height="560" rx="50" fill="#fff"/>`;
+  s += `<rect x="80" y="1000" width="920" height="110" rx="50" fill="#FF5C8A"/><rect x="80" y="1060" width="920" height="50" fill="#FF5C8A"/>`;
+  s += `<text x="540" y="1078" font-size="56" text-anchor="middle" fill="#fff">포유류 엄마 꿀팁</text>`;
+  s += `<text x="540" y="1210" font-size="58" text-anchor="middle" fill="#222">부유방, 생각보다 흔해요</text>`;
+  s += `<text x="540" y="1300" font-size="58" text-anchor="middle" fill="#222">그래도 새로 생긴 멍울은</text>`;
+  s += `<text x="540" y="1390" font-size="62" text-anchor="middle" fill="#E0314F">꼭 진료로 확인하세요!</text>`;
+  const bp = pop(t, 0.6);
+  s += `<g transform="translate(540 1485) scale(${bp})">`;
+  s += `<rect x="-330" y="-48" width="300" height="88" rx="44" fill="#FF3B3B"/><text x="-180" y="12" font-size="42" text-anchor="middle" fill="#fff">구독</text>`;
+  s += `<rect x="30" y="-48" width="300" height="88" rx="44" fill="#222"/><text x="180" y="12" font-size="42" text-anchor="middle" fill="#fff">좋아요 ♥</text>`;
+  s += `</g></g>`;
+  return s;
+}
+
+function title(t) {
+  const p = Math.min(1, pop(t, 0, 0.45));
+  return `<g transform="translate(540 230) scale(${p})">`
+    + `<rect x="-260" y="-150" width="520" height="80" rx="40" fill="#FF5C8A"/>`
+    + `<text x="0" y="-92" font-size="50" text-anchor="middle" fill="#fff">임신하고 깨달은 사실</text>`
+    + outlined(0, 40, '겨드랑이에 가슴이?!', 112, '#FFE14D', '#1B1B1F', 18, 'BHS') + `</g>`;
+}
+
+// ───────────────────────── main render ─────────────────────────
+let TL = window.TL;
+function render(T) {
+  if (!TL._ready) { prepare(); TL._ready = true; }
+  const sc = TL.scenes.find(s => T >= s.start && T < s.end) || TL.scenes[TL.scenes.length - 1];
+  const t = T - sc.start, dur = sc.end - sc.start;
+  let out = SHOTS[sc.name](t, dur, sc.line);
+  // hard jump-cut flash on every cut except the first
+  if (sc !== TL.scenes[0] && t < 0.12) out += `<rect width="1080" height="1920" fill="#fff" opacity="${0.7 * (1 - t / 0.12)}"/>`;
+  out += title(T);
+  out += subtitle(T);
+  document.getElementById('stage').innerHTML = out;
+}
+window.render = render;
+</script>
+</body>
+</html>

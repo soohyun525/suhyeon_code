@@ -20,7 +20,7 @@ const tl = JSON.parse(readFileSync(path.join(buildDir, 'timeline.json'), 'utf8')
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
 await page.addInitScript(t => { window.TL = t; }, tl);
-await page.goto('file://' + path.join(here, 'scene.html'));
+await page.goto('file://' + path.join(here, process.env.SCENE_HTML || 'scene.html'));
 await page.evaluate(() => document.fonts.load('40px Jua').then(() => document.fonts.load('40px BHS')));
 await page.evaluate(() => document.fonts.ready);
 
