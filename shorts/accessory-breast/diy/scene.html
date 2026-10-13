@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Shorts scene</title>
+<style>
+  @font-face { font-family: Jua; src: url('fonts/Jua.ttf'); }
+  @font-face { font-family: BHS; src: url('fonts/BlackHanSans.ttf'); }
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  #stage { width: 1080px; height: 1920px; display: block; }
+  text { font-family: Jua, sans-serif; }
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg"></svg>
+<script>
+// ───────────────────────── helpers ─────────────────────────
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = k => { k = clamp(k); return k * k * (3 - 2 * k); };
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+// Overshooting pop-in scale: 0 → 1.15 → 1.
+const pop = (t, t0, d = 0.35) => {
+  const k = prog(t, t0, t0 + d);
+  if (k <= 0) return 0;
+  const c = 2.2;
+  return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2);
+};
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+const C = {
+  skin: '#FFDCC5', skinShade: '#F2B89C', hair: '#3A2622', line: '#2B1B17',
+  top: '#FF8FAB', topLight: '#FFB8CB', pants: '#5B6C9E', blush: '#FF8C9A',
+  coat: '#FFFFFF', coatShade: '#DDE6EE', shirt: '#7FB7E6',
+};
+
+// ───────────────────────── face ─────────────────────────
+function face(expr, mouth, blink) {
+  let s = '';
+  // brows
+  const brows = {
+    neutral: [[-68, -578, -22, -584], [22, -584, 68, -578]],
+    happy:   [[-68, -582, -22, -590], [22, -590, 68, -582]],
+    shock:   [[-70, -610, -24, -618], [24, -618, 70, -610]],
+    worry:   [[-70, -578, -24, -598], [24, -598, 70, -578]],
+  }[expr] || [[-68, -578, -22, -584], [22, -584, 68, -578]];
+  for (const [x1, y1, x2, y2] of brows)
+    s += `<path d="M${x1} ${y1} Q${(x1 + x2) / 2} ${Math.min(y1, y2) - 8} ${x2} ${y2}" stroke="${C.hair}" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  // eyes
+  for (const ex of [-44, 44]) {
+    if (blink && expr !== 'shock') {
+      s += `<path d="M${ex - 16} -530 Q${ex} -522 ${ex + 16} -530" stroke="${C.line}" stroke-width="7" fill="none" stroke-linecap="round"/>`;
+    } else if (expr === 'happy') {
+      s += `<path d="M${ex - 18} -526 Q${ex} -552 ${ex + 18} -526" stroke="${C.line}" stroke-width="8" fill="none" stroke-linecap="round"/>`;
+    } else if (expr === 'shock') {
+      s += `<circle cx="${ex}" cy="-532" r="28" fill="#fff" stroke="${C.line}" stroke-width="5"/>`;
+      s += `<circle cx="${ex}" cy="-530" r="9" fill="${C.line}"/>`;
+    } else {
+      s += `<ellipse cx="${ex}" cy="-530" rx="16" ry="21" fill="${C.line}"/>`;
+      s += `<circle cx="${ex + 6}" cy="-538" r="6" fill="#fff"/>`;
+    }
+  }
+  // blush
+  s += `<ellipse cx="-74" cy="-488" rx="24" ry="13" fill="${C.blush}" opacity=".55"/>`;
+  s += `<ellipse cx="74" cy="-488" rx="24" ry="13" fill="${C.blush}" opacity=".55"/>`;
+  // mouth
+  if (mouth > 0.04) {
+    const rx = 15 + 9 * mouth, ry = 4 + 22 * mouth;
+    s += `<ellipse cx="0" cy="${-466 + ry * 0.4}" rx="${rx}" ry="${ry}" fill="#A8323F"/>`;
+    if (ry > 10) s += `<ellipse cx="0" cy="${-466 + ry * 1.0}" rx="${rx * 0.6}" ry="${ry * 0.35}" fill="#F27C8A"/>`;
+  } else if (expr === 'happy') {
+    s += `<path d="M-26 -476 Q0 -440 26 -476 Z" fill="#A8323F" stroke="${C.line}" stroke-width="4" stroke-linejoin="round"/>`;
+  } else if (expr === 'shock') {
+    s += `<ellipse cx="0" cy="-462" rx="13" ry="17" fill="#A8323F" stroke="${C.line}" stroke-width="4"/>`;
+  } else if (expr === 'worry') {
+    s += `<path d="M-22 -462 q11 -10 22 0 q11 10 22 0" stroke="${C.line}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  } else {
+    s += `<path d="M-18 -470 Q0 -456 18 -470" stroke="${C.line}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  }
+  return s;
+}
+
+// Arm as a bent stroke: shoulder → elbow → hand, blended between poses.
+function arm(side, pose, k, t, color) {
+  const sx = 102 * side, sy = -385;
+  const poses = {
+    down:  [[135 * side, -265], [70 * side, -175]],          // hand resting on belly
+    up:    [[205 * side, -500], [95 * side, -625]],          // hand behind head
+    wave:  [[190 * side, -430], [(215 + 25 * Math.sin(t * 12)) * side, -585]],
+    touch: [[150 * side, -300], [118 * side, -360]],         // hand to side of chest
+    hip:   [[165 * side, -290], [118 * side, -170]],
+  };
+  const [e0, h0] = poses.down, [e1, h1] = poses[pose] || poses.down;
+  const ex = lerp(e0[0], e1[0], k), ey = lerp(e0[1], e1[1], k);
+  const hx = lerp(h0[0], h1[0], k), hy = lerp(h0[1], h1[1], k);
+  return `<path d="M${sx} ${sy} L${ex} ${ey} L${hx} ${hy}" stroke="${C.skinShade}" stroke-width="48" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+       + `<path d="M${sx} ${sy} L${ex} ${ey} L${hx} ${hy}" stroke="${color || C.skin}" stroke-width="40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+       + `<circle cx="${hx}" cy="${hy}" r="25" fill="${C.skin}" stroke="${C.skinShade}" stroke-width="4"/>`;
+}
+
+// ───────────────────────── characters ─────────────────────────
+function mom(o) {
+  const { x, y, s = 1, mouth = 0, expr = 'neutral', blink = false, t = 0,
+          rPose = 'down', rK = 0, lPose = 'down', lK = 0, tilt = 0, legs = true } = o;
+  let g = `<g transform="translate(${x} ${y}) scale(${s}) rotate(${tilt} 0 -400)">`;
+  // back hair
+  g += `<path d="M-150 -540 C-165 -720 165 -720 150 -540 L162 -380 C110 -350 -110 -350 -162 -380 Z" fill="${C.hair}"/>`;
+  if (legs) {
+    g += `<rect x="-105" y="-20" width="88" height="330" rx="40" fill="${C.pants}"/>`;
+    g += `<rect x="17" y="-20" width="88" height="330" rx="40" fill="${C.pants}"/>`;
+  }
+  g += `<path d="M-120 -130 L120 -130 L125 30 Q0 55 -125 30 Z" fill="${C.pants}"/>`;
+  // neck + shoulders (skin)
+  g += `<rect x="-28" y="-445" width="56" height="70" fill="${C.skinShade}"/>`;
+  g += `<path d="M-112 -360 Q-112 -405 -60 -408 L60 -408 Q112 -405 112 -360 L112 -330 L-112 -330 Z" fill="${C.skin}"/>`;
+  // tank top
+  g += `<path d="M-108 -370 L-70 -372 L-62 -408 L-40 -408 Q0 -360 40 -408 L62 -408 L70 -372 L108 -370 Q122 -250 120 -110 L-120 -110 Q-122 -250 -108 -370 Z" fill="${C.top}"/>`;
+  // baby bump
+  g += `<ellipse cx="0" cy="-200" rx="132" ry="118" fill="${C.top}"/>`;
+  g += `<path d="M-80 -270 Q-40 -305 10 -300" stroke="${C.topLight}" stroke-width="14" fill="none" stroke-linecap="round"/>`;
+  g += `<path d="M-128 -120 Q0 -70 128 -120" stroke="#E36F8E" stroke-width="6" fill="none"/>`;
+  // left arm (viewer side), right arm drawn before head so a raised hand tucks behind it
+  g += arm(-1, lPose, lK, t);
+  g += arm(1, rPose, rK, t);
+  // head
+  g += `<circle cx="-122" cy="-520" r="22" fill="${C.skin}"/><circle cx="122" cy="-520" r="22" fill="${C.skin}"/>`;
+  g += `<circle cx="0" cy="-530" r="126" fill="${C.skin}"/>`;
+  g += `<path d="M-132 -545 C-125 -690 125 -700 132 -545 C95 -600 35 -612 5 -588 C-25 -615 -95 -602 -132 -545 Z" fill="${C.hair}"/>`;
+  // hair clip
+  g += `<g transform="translate(92 -628) rotate(20)"><path d="M-22 -10 L0 0 L-22 10 Z M22 -10 L0 0 L22 10 Z" fill="#FFD23F" stroke="#E0A800" stroke-width="3"/><circle r="7" fill="#FFD23F"/></g>`;
+  g += face(expr, mouth, blink);
+  g += `</g>`;
+  return g;
+}
+
+function doctor(o) {
+  const { x, y, s = 1, mouth = 0, expr = 'neutral', blink = false, t = 0, point = 0 } = o;
+  let g = `<g transform="translate(${x} ${y}) scale(${s})">`;
+  // bun + hair
+  g += `<circle cx="0" cy="-690" r="58" fill="#2E2A3A"/>`;
+  g += `<path d="M-135 -540 C-140 -700 140 -700 135 -540 L130 -470 L-130 -470 Z" fill="#2E2A3A"/>`;
+  g += `<rect x="-28" y="-445" width="56" height="70" fill="${C.skinShade}"/>`;
+  // shirt + coat
+  g += `<path d="M-125 -360 Q-125 -405 -60 -410 L60 -410 Q125 -405 125 -360 L135 0 L-135 0 Z" fill="${C.coat}" stroke="${C.coatShade}" stroke-width="6"/>`;
+  g += `<path d="M-45 -410 L0 -320 L45 -410 Z" fill="${C.shirt}"/>`;
+  g += `<path d="M-60 -410 L-5 -300 L-30 -120 M60 -410 L5 -300 L30 -120" stroke="${C.coatShade}" stroke-width="7" fill="none"/>`;
+  // stethoscope
+  g += `<path d="M-40 -405 Q-70 -300 -20 -260 M40 -405 Q70 -300 20 -260 M-20 -260 Q0 -240 20 -260" stroke="#5A6B7D" stroke-width="8" fill="none" stroke-linecap="round"/>`;
+  g += `<circle cx="0" cy="-232" r="16" fill="#9AA9B8" stroke="#5A6B7D" stroke-width="5"/>`;
+  // pocket + badge
+  g += `<rect x="45" y="-300" width="55" height="45" rx="6" fill="none" stroke="${C.coatShade}" stroke-width="5"/>`;
+  g += `<rect x="52" y="-318" width="12" height="30" rx="3" fill="#4A90D9"/>`;
+  // arms (white sleeves)
+  g += arm(-1, 'hip', 1, t, C.coat);
+  g += arm(1, 'wave', point, t * 0.25, C.coat);
+  // head
+  g += `<circle cx="-122" cy="-520" r="22" fill="${C.skin}"/><circle cx="122" cy="-520" r="22" fill="${C.skin}"/>`;
+  g += `<circle cx="0" cy="-530" r="126" fill="${C.skin}"/>`;
+  g += `<path d="M-130 -540 C-120 -690 120 -690 130 -540 C80 -620 -40 -630 -130 -540 Z" fill="#2E2A3A"/>`;
+  g += face(expr, mouth, blink);
+  // glasses
+  g += `<circle cx="-44" cy="-530" r="36" fill="none" stroke="#5A3E2B" stroke-width="7"/>`;
+  g += `<circle cx="44" cy="-530" r="36" fill="none" stroke="#5A3E2B" stroke-width="7"/>`;
+  g += `<path d="M-8 -534 Q0 -542 8 -534" stroke="#5A3E2B" stroke-width="7" fill="none"/>`;
+  g += `</g>`;
+  return g;
+}
+
+// ───────────────────────── scene pieces ─────────────────────────
+function heart(x, y, s, fill = '#FF5C8A', op = 1) {
+  return `<path transform="translate(${x} ${y}) scale(${s})" opacity="${op}" d="M0 18 C-30 -8 -22 -34 0 -20 C22 -34 30 -8 0 18 Z" fill="${fill}" stroke="#fff" stroke-width="3"/>`;
+}
+function sweat(x, y, s = 1, op = 1) {
+  return `<path transform="translate(${x} ${y}) scale(${s})" opacity="${op}" d="M0 -30 C14 -8 20 6 0 20 C-20 6 -14 -8 0 -30 Z" fill="#7CC8FF" stroke="#3A8FD0" stroke-width="3"/>`;
+}
+function outlined(x, y, text, size, fill, stroke = '#1B1B1F', sw = 14, font = 'Jua', anchor = 'middle', extra = '') {
+  return `<text x="${x}" y="${y}" font-family="${font}" font-size="${size}" text-anchor="${anchor}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" paint-order="stroke" ${extra}>${esc(text)}</text>`;
+}
+
+function sceneMirror(t, line) {
+  let s = '';
+  // tiles
+  s += `<rect width="1080" height="1920" fill="#CFEFF0"/>`;
+  for (let i = 0; i <= 1080; i += 120) s += `<line x1="${i}" y1="0" x2="${i}" y2="1920" stroke="#B4E0E2" stroke-width="5"/>`;
+  for (let j = 0; j <= 1920; j += 120) s += `<line x1="0" y1="${j}" x2="1080" y2="${j}" stroke="#B4E0E2" stroke-width="5"/>`;
+  // camera slow push
+  const z = lerp(1, 1.1, ease(t / 2.7));
+  s += `<g transform="translate(540 1050) scale(${z}) translate(-540 -1050)">`;
+  // mirror
+  s += `<rect x="110" y="380" width="860" height="1080" rx="60" fill="#8FA7B3"/>`;
+  s += `<rect x="135" y="405" width="810" height="1030" rx="45" fill="#EAF7FB"/>`;
+  s += `<path d="M180 520 L330 420 M200 640 L430 470" stroke="#fff" stroke-width="22" stroke-linecap="round" opacity=".8"/>`;
+  s += `<clipPath id="mc"><rect x="135" y="405" width="810" height="1030" rx="45"/></clipPath>`;
+  // her reflection
+  const raise = ease(prog(t, 0.45, 0.85));
+  const noticed = t > 0.95;
+  const sway = noticed ? 0 : Math.sin(t * 4) * 2.5;
+  const m = line.mouthAt(t);
+  s += `<g clip-path="url(#mc)">`;
+  s += mom({ x: 540, y: 1560, s: 1.05, t, tilt: sway, rPose: 'up', rK: raise,
+             lPose: 'touch', lK: ease(prog(t, 0.75, 1.0)),
+             expr: noticed ? 'shock' : 'neutral', mouth: m, blink: !noticed && (t % 2.2) > 2.05 });
+  s += `</g>`;
+  // lump marker on her left side (viewer's left: the touching hand)
+  if (t > 0.95) {
+    const p = pop(t, 0.95), pulse = 1 + 0.12 * Math.sin(t * 14);
+    const cx = 540 - 118 * 1.05, cy = 1560 - 340 * 1.05;
+    s += `<circle cx="${cx}" cy="${cy}" r="${48 * p * pulse}" fill="none" stroke="#FF3B5C" stroke-width="9" stroke-dasharray="16 10"/>`;
+    s += `<g transform="translate(${cx - 120} ${cy - 120}) scale(${p})">`
+       + `<rect x="-95" y="-48" width="190" height="76" rx="38" fill="#FF3B5C"/>`
+       + outlined(0, 12, '멍울?!', 50, '#fff', '#FF3B5C', 0) + `</g>`;
+  }
+  // ?! over head
+  if (t > 1.0) {
+    const p = pop(t, 1.0, 0.3);
+    s += `<g transform="translate(790 640) scale(${p}) rotate(12)">${outlined(0, 0, '?!', 170, '#FFD23F', '#1B1B1F', 16, 'BHS')}</g>`;
+  }
+  s += `</g>`;
+  // counter + sink
+  s += `<rect x="0" y="1470" width="1080" height="450" fill="#F7F1E8"/>`;
+  s += `<rect x="0" y="1460" width="1080" height="30" fill="#E2D6C6"/>`;
+  s += `<rect x="760" y="1360" width="90" height="110" rx="14" fill="#9AD0F5"/>`;
+  s += `<path d="M785 1365 L770 1250 M815 1365 L835 1240" stroke="#FF8FAB" stroke-width="12" stroke-linecap="round"/>`;
+  s += `<path d="M180 1470 Q180 1400 250 1400 L330 1400 Q400 1400 400 1470 Z" fill="#fff" stroke="#D9D0C3" stroke-width="5"/>`;
+  return s;
+}
+
+function scenePanic(t, line, dur) {
+  let s = '';
+  // comic burst
+  s += `<rect width="1080" height="1920" fill="#FFE27A"/>`;
+  const rot = t * 18;
+  s += `<g transform="translate(540 900) rotate(${rot})">`;
+  for (let i = 0; i < 18; i++) {
+    const a = i * 20 * Math.PI / 180, b = (i * 20 + 10) * Math.PI / 180;
+    s += `<path d="M0 0 L${2000 * Math.cos(a)} ${2000 * Math.sin(a)} L${2000 * Math.cos(b)} ${2000 * Math.sin(b)} Z" fill="#FFB547"/>`;
+  }
+  s += `</g>`;
+  const jx = Math.sin(t * 55) * 6, jy = Math.cos(t * 47) * 4;
+  const m = line.mouthAt(t);
+  s += mom({ x: 540 + jx, y: 1880 + jy, s: 1.85, t, expr: 'worry', mouth: m, blink: false, legs: false });
+  // sweat + ? marks
+  for (let i = 0; i < 3; i++) {
+    const k = ((t * 1.6 + i / 3) % 1);
+    s += sweat(820 + i * 40, 560 + k * 160, 1.6, 1 - k);
+  }
+  for (const [qx, qy, d] of [[170, 600, 0.2], [930, 480, 0.4], [200, 380, 0.6]]) {
+    const p = pop(t, d);
+    s += `<g transform="translate(${qx} ${qy + Math.sin(t * 5 + qx) * 12}) scale(${p})">${outlined(0, 0, '?', 120, '#fff', '#1B1B1F', 14, 'BHS')}</g>`;
+  }
+  // phone
+  const pin = ease(prog(t, 0, 0.25));
+  const py = lerp(1950, 1180, pin);
+  s += `<g transform="translate(600 ${py}) rotate(-8)">`;
+  s += `<rect x="0" y="0" width="400" height="720" rx="50" fill="#22222B"/>`;
+  s += `<rect x="18" y="22" width="364" height="676" rx="36" fill="#fff"/>`;
+  s += `<rect x="40" y="70" width="320" height="64" rx="32" fill="#F1F3F6" stroke="#4A90D9" stroke-width="4"/>`;
+  const q = '임신 겨드랑이 멍울';
+  const n = Math.floor(clamp((t - 0.15) / 1.0) * q.length);
+  const cursor = (t * 3) % 1 < 0.5 ? '|' : '';
+  s += `<text x="62" y="113" font-size="30" fill="#222">${esc(q.slice(0, n) + (n < q.length ? cursor : ''))}</text>`;
+  s += `<circle cx="330" cy="102" r="13" fill="none" stroke="#4A90D9" stroke-width="5"/><path d="M339 111 L350 122" stroke="#4A90D9" stroke-width="5" stroke-linecap="round"/>`;
+  const results = ['겨드랑이 멍울, 원인은?', '임신 중 멍울 생기면…', '이거 혹시 큰 병?'];
+  results.forEach((r, i) => {
+    const k = ease(prog(t, 1.25 + i * 0.25, 1.5 + i * 0.25));
+    if (k <= 0) return;
+    s += `<g opacity="${k}" transform="translate(0 ${(1 - k) * 30})">`;
+    s += `<rect x="40" y="${170 + i * 130}" width="320" height="105" rx="18" fill="${i === 2 ? '#FFE3E8' : '#F5F7FA'}"/>`;
+    s += `<rect x="58" y="${195 + i * 130}" width="240" height="14" rx="7" fill="#C9D3DE"/>`;
+    s += `<text x="58" y="${252 + i * 130}" font-size="30" fill="${i === 2 ? '#E0314F' : '#1E3A8A'}">${esc(r)}</text>`;
+    s += `</g>`;
+  });
+  s += `</g>`;
+  return s;
+}
+
+function sceneClinic(t, line, dur) {
+  let s = '';
+  s += `<rect width="1080" height="1920" fill="#DDF3EA"/>`;
+  s += `<rect x="0" y="1380" width="1080" height="540" fill="#C6E4D8"/>`;
+  // window with blinds
+  s += `<rect x="690" y="420" width="300" height="360" rx="16" fill="#BFE6FF" stroke="#fff" stroke-width="14"/>`;
+  for (let j = 450; j < 770; j += 40) s += `<line x1="700" y1="${j}" x2="980" y2="${j}" stroke="#fff" stroke-width="6" opacity=".8"/>`;
+  // info board
+  const bp = pop(t, 0.3, 0.4);
+  s += `<g transform="translate(330 640) scale(${bp}) translate(-330 -640)">`;
+  s += `<rect x="70" y="400" width="520" height="520" rx="24" fill="#fff" stroke="#8BC6B0" stroke-width="10"/>`;
+  s += `<text x="330" y="470" font-size="44" text-anchor="middle" fill="#2E7D63">부유방이란?</text>`;
+  // simple body outline with the milk line
+  s += `<g transform="translate(330 700)">`;
+  s += `<circle cx="0" cy="-160" r="45" fill="none" stroke="#9AA9B8" stroke-width="7"/>`;
+  s += `<path d="M-90 -100 Q-110 40 -70 190 L70 190 Q110 40 90 -100 Q0 -125 -90 -100 Z" fill="none" stroke="#9AA9B8" stroke-width="7"/>`;
+  s += `<path d="M-80 -80 Q-55 60 -18 190 M80 -80 Q55 60 18 190" stroke="#FF8FAB" stroke-width="5" stroke-dasharray="10 9" fill="none"/>`;
+  const glow = 1 + 0.2 * Math.sin(t * 9);
+  s += `<circle cx="-82" cy="-78" r="${18 * glow}" fill="#FF3B5C" opacity=".85"/>`;
+  s += `<circle cx="82" cy="-78" r="${18 * glow}" fill="#FF3B5C" opacity=".85"/>`;
+  s += `</g>`;
+  s += `<text x="330" y="890" font-size="32" text-anchor="middle" fill="#555">겨드랑이 쪽 여분의 유선 조직</text>`;
+  s += `</g>`;
+  // doctor (left) and mom (right)
+  const lt = t;
+  const m = line.mouthAt(t);
+  s += doctor({ x: 290, y: 1620, s: 0.95, t, mouth: m, expr: 'happy', blink: (t % 2.6) > 2.45 && m < 0.05, point: ease(prog(t, 0.2, 0.6)) });
+  const relieved = t > line.end - line.sceneStart + 0.1;
+  s += mom({ x: 800, y: 1760, s: 0.88, t, expr: relieved ? 'happy' : 'worry', lPose: 'down', rPose: 'down', blink: false });
+  // desk
+  s += `<rect x="-20" y="1500" width="1120" height="70" rx="12" fill="#B98B62"/>`;
+  s += `<rect x="20" y="1560" width="1040" height="360" fill="#A57A55"/>`;
+  // info chips
+  const chips = ['겨드랑이에 흔해요', '임신·수유 때 커질 수 있어요'];
+  chips.forEach((c, i) => {
+    const p = pop(t, 1.2 + i * 0.9, 0.35);
+    if (p <= 0) return;
+    const y = 870 + i * 110;
+    const w = 36 * c.length + 50;
+    s += `<g transform="translate(${1040 - w / 2} ${y}) scale(${p}) translate(${-w / 2} 0)">`;
+    s += `<rect x="0" y="-50" width="${w}" height="82" rx="41" fill="#2E7D63"/>`;
+    s += `<text x="${w / 2}" y="5" font-size="40" text-anchor="middle" fill="#fff">${esc(c)}</text>`;
+    s += `</g>`;
+  });
+  // relief: hearts + sigh
+  if (relieved) {
+    const k = t - (line.end - line.sceneStart + 0.1);
+    for (let i = 0; i < 3; i++) {
+      const kk = clamp(k * 1.2 - i * 0.2);
+      if (kk > 0) s += heart(860 + (i - 1) * 90, 1240 - kk * 150, 1.6, '#FF5C8A', 1 - kk * 0.6);
+    }
+    s += `<g transform="translate(960 1180) scale(${pop(t, line.end - line.sceneStart + 0.1)})">${outlined(0, 0, '휴~', 80, '#fff', '#2E7D63', 12)}</g>`;
+  }
+  return s;
+}
+
+function sceneSofa(t, line, dur, endStart) {
+  let s = '';
+  s += `<rect width="1080" height="1920" fill="#FBEBDD"/>`;
+  // wall pattern
+  for (let i = 0; i < 9; i++) for (let j = 0; j < 14; j++)
+    s += `<circle cx="${60 + i * 125 + (j % 2) * 62}" cy="${380 + j * 110}" r="6" fill="#F3D7C2"/>`;
+  // window + curtains
+  s += `<rect x="300" y="420" width="480" height="420" rx="20" fill="#A8DBFF" stroke="#fff" stroke-width="16"/>`;
+  s += `<circle cx="650" cy="530" r="55" fill="#FFF3B0"/>`;
+  s += `<path d="M260 400 Q330 620 280 880 L360 880 Q400 620 360 400 Z M820 400 Q750 620 800 880 L720 880 Q680 620 720 400 Z" fill="#FFB3C6"/>`;
+  // plant
+  s += `<rect x="900" y="1230" width="110" height="140" rx="16" fill="#E39B6B"/>`;
+  for (const [a, l] of [[-40, 190], [-10, 230], [25, 200], [55, 160]])
+    s += `<ellipse cx="955" cy="1230" rx="28" ry="${l / 2}" fill="#5DBB7A" transform="rotate(${a} 955 1230) translate(0 ${-l / 2})"/>`;
+  // sofa back
+  s += `<rect x="70" y="1020" width="940" height="420" rx="90" fill="#FF8C7A"/>`;
+  // mom
+  const m = line.mouthAt(t);
+  const talking = m > 0.04;
+  s += mom({ x: 540, y: 1590, s: 1.12, t, mouth: m, expr: 'happy',
+             rPose: 'wave', rK: ease(prog(t, 0.2, 0.5)), lPose: 'down', lK: 0,
+             blink: !talking && (t % 2.3) > 2.15, tilt: Math.sin(t * 3) * 2 });
+  // sofa seat + arms in front
+  s += `<rect x="40" y="1430" width="1000" height="260" rx="60" fill="#F06F5E"/>`;
+  s += `<rect x="20" y="1180" width="150" height="480" rx="70" fill="#FF8C7A"/>`;
+  s += `<rect x="910" y="1180" width="150" height="480" rx="70" fill="#FF8C7A"/>`;
+  s += `<rect x="0" y="1690" width="1080" height="230" fill="#E0C3A8"/>`;
+  // floating hearts
+  for (let i = 0; i < 6; i++) {
+    const k = ((t * 0.5 + i / 6) % 1);
+    s += heart(120 + i * 165, 1150 - k * 600, 1.1 + (i % 2) * 0.5, i % 2 ? '#FF5C8A' : '#FFB3C6', Math.sin(k * Math.PI));
+  }
+  // end card
+  if (t > endStart) {
+    const k = ease(prog(t, endStart, endStart + 0.45));
+    s += `<rect width="1080" height="1920" fill="#000" opacity="${0.45 * k}"/>`;
+    s += `<g transform="translate(0 ${(1 - k) * 500})" opacity="${k}">`;
+    s += `<rect x="80" y="1060" width="920" height="560" rx="50" fill="#fff"/>`;
+    s += `<rect x="80" y="1060" width="920" height="110" rx="50" fill="#FF5C8A"/><rect x="80" y="1120" width="920" height="50" fill="#FF5C8A"/>`;
+    s += `<text x="540" y="1138" font-size="56" text-anchor="middle" fill="#fff">임산부 꿀팁</text>`;
+    s += `<text x="540" y="1270" font-size="58" text-anchor="middle" fill="#222">부유방은 흔한 편이지만</text>`;
+    s += `<text x="540" y="1360" font-size="58" text-anchor="middle" fill="#222">새로 생긴 멍울은</text>`;
+    s += `<text x="540" y="1450" font-size="62" text-anchor="middle" fill="#E0314F">꼭 진료로 확인하세요!</text>`;
+    const bp = pop(t, endStart + 0.6);
+    s += `<g transform="translate(540 1545) scale(${bp})">`;
+    s += `<rect x="-330" y="-48" width="300" height="88" rx="44" fill="#FF3B3B"/><text x="-180" y="12" font-size="42" text-anchor="middle" fill="#fff">구독</text>`;
+    s += `<rect x="30" y="-48" width="300" height="88" rx="44" fill="#222"/><text x="180" y="12" font-size="42" text-anchor="middle" fill="#fff">좋아요 ♥</text>`;
+    s += `</g></g>`;
+  }
+  return s;
+}
+
+// ───────────────────────── overlay ─────────────────────────
+function title(t) {
+  let s = '';
+  const p = Math.min(1, pop(t, 0, 0.45));
+  s += `<g transform="translate(540 230) scale(${p})">`;
+  s += `<rect x="-200" y="-150" width="400" height="80" rx="40" fill="#FF5C8A"/>`;
+  s += `<text x="0" y="-92" font-size="50" text-anchor="middle" fill="#fff">임신했는데</text>`;
+  s += outlined(0, 40, '겨드랑이에 멍울이?!', 112, '#FFE14D', '#1B1B1F', 18, 'BHS');
+  s += `</g>`;
+  return s;
+}
+
+// Split a line into subtitle chunks at sentence ends, timed by length.
+function chunks(line) {
+  const parts = line.text.match(/[^.?!…]+[.?!…]+\s*|[^.?!…]+$/g).map(p => p.trim()).filter(Boolean);
+  const total = parts.reduce((a, p) => a + p.length, 0);
+  let t = line.start;
+  const span = line.end - line.start;
+  return parts.map(p => { const d = span * p.length / total; const c = { text: p, start: t, end: t + d }; t += d; return c; });
+}
+function wrap(text, max = 11) {
+  if (text.length <= max) return [text];
+  const words = text.split(' ');
+  let best = [text], bestDiff = 1e9;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
+    const d = Math.abs(a.length - b.length);
+    if (d < bestDiff) { bestDiff = d; best = [a, b]; }
+  }
+  return best;
+}
+function subtitle(T) {
+  for (const line of TL.lines) {
+    for (const c of line._chunks) {
+      if (T >= c.start - 0.05 && T < c.end + 0.25) {
+        const rows = wrap(c.text);
+        const p = Math.min(1, pop(T, c.start - 0.05, 0.22));
+        const baseY = 1690 - (rows.length - 1) * 50;
+        let s = `<g transform="translate(540 ${baseY}) scale(${p})">`;
+        if (line.speaker === 'doc') {
+          s += `<rect x="-90" y="${-150}" width="180" height="64" rx="32" fill="#2E7D63"/>`;
+          s += `<text x="0" y="${-105}" font-size="40" text-anchor="middle" fill="#fff">의사쌤</text>`;
+        }
+        const w = Math.max(...rows.map(r => r.length)) * 78 + 90;
+        s += `<rect x="${-w / 2}" y="-85" width="${w}" height="${rows.length * 100 + 40}" rx="36" fill="#000" opacity=".45"/>`;
+        rows.forEach((r, i) => {
+          s += outlined(0, i * 100, r, 84, line.speaker === 'doc' ? '#B8FFE4' : '#fff', '#1B1B1F', 16);
+        });
+        return s + `</g>`;
+      }
+    }
+  }
+  return '';
+}
+
+// ───────────────────────── main render ─────────────────────────
+let TL = window.TL;
+function prepare() {
+  for (const line of TL.lines) {
+    line._chunks = chunks(line);
+    const sc = TL.scenes.find(s => s.name === line.scene);
+    line.sceneStart = sc.start;
+    // mouth openness by scene-local time
+    line.mouthAt = lt => {
+      const T = lt + sc.start - line.start;
+      if (T < 0 || T >= line.end - line.start) return 0;
+      const i = Math.floor(T * TL.fps);
+      const v = line.mouth[i] || 0;
+      return v;
+    };
+    sc.line = line;
+  }
+}
+
+function render(T) {
+  if (!TL._ready) { prepare(); TL._ready = true; }
+  const sc = TL.scenes.find(s => T >= s.start && T < s.end) || TL.scenes[TL.scenes.length - 1];
+  const t = T - sc.start, dur = sc.end - sc.start;
+  let body = '';
+  if (sc.name === 'mirror') body = sceneMirror(t, sc.line, dur);
+  if (sc.name === 'panic') body = scenePanic(t, sc.line, dur);
+  if (sc.name === 'clinic') body = sceneClinic(t, sc.line, dur);
+  if (sc.name === 'sofa') body = sceneSofa(t, sc.line, dur, dur - 2.6);
+  // scene-in zoom + flash
+  const zk = ease(prog(t, 0, 0.3));
+  const z = sc.name === 'mirror' ? 1 : lerp(1.08, 1, zk);
+  let out = `<g transform="translate(540 960) scale(${z}) translate(-540 -960)">${body}</g>`;
+  if (sc.name !== 'mirror' && t < 0.25) out += `<rect width="1080" height="1920" fill="#fff" opacity="${1 - t / 0.25}"/>`;
+  out += title(T);
+  out += subtitle(T);
+  document.getElementById('stage').innerHTML = out;
+}
+window.render = render;
+</script>
+</body>
+</html>
