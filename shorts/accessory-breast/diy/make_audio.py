@@ -17,14 +17,15 @@ FPS = 30
 
 # (scene, speaker, text). Each scene gets exactly one line.
 LINES = [
-    ("mirror", "mom", "어…? 이거 뭐야?"),
-    ("panic", "mom", "겨드랑이에 멍울이…? 혹시 큰 병이면 어떡해!"),
-    ("clinic", "doc", "부유방이에요. 임신하면 호르몬 때문에 커질 수 있어요."),
-    ("sofa", "mom", "나만 몰랐어?! 임산부 여러분, 놀라지 말고 병원 먼저 가봐요!"),
+    ("girl", "girl", "나는 이슬만 먹고 사는 소녀였는데…"),
+    ("mirror", "mom", "근데 겨드랑이에 이건 뭐야?!"),
+    ("clinic", "doc", "부유방이에요. 젖줄이 겨드랑이까지 있어서, 임신하면 커지기도 해요."),
+    ("realize", "mom", "젖줄…? 그럼 나… 포유류였어?!"),
+    ("docu", "narr", "그렇게 소녀는, 포유류가 되었다."),
 ]
 # Silence before / after each line inside its scene, seconds.
-LEAD = {"mirror": 1.4, "panic": 0.5, "clinic": 0.6, "sofa": 0.5}
-TAIL = {"mirror": 0.5, "panic": 0.6, "clinic": 1.6, "sofa": 0.4}
+LEAD = {"girl": 0.5, "mirror": 1.3, "clinic": 0.5, "realize": 1.0, "docu": 0.9}
+TAIL = {"girl": 0.3, "mirror": 0.4, "clinic": 1.1, "realize": 0.7, "docu": 0.6}
 END_CARD = 2.6
 
 
@@ -53,7 +54,13 @@ def tts(text, speaker, out_dir, idx):
     gTTS(text, lang="ko").save(mp3)
     if speaker == "doc":
         # Slightly lower, calmer voice for the doctor.
-        filt = f"asetrate={SR}*0.9,aresample={SR},atempo=1.18"
+        filt = f"asetrate={SR}*0.9,aresample={SR},atempo=1.2"
+    elif speaker == "narr":
+        # Deep, slow nature-documentary narrator with a little room echo.
+        filt = f"asetrate={SR}*0.78,aresample={SR},atempo=1.0,aecho=0.8:0.6:70:0.22"
+    elif speaker == "girl":
+        # Sweet, airy flashback voice.
+        filt = f"asetrate={SR}*1.12,aresample={SR},atempo=1.08,aecho=0.8:0.5:40:0.2"
     else:
         # Slightly brighter and quicker for the young mom.
         filt = f"asetrate={SR}*1.04,aresample={SR},atempo=1.22"
@@ -146,6 +153,15 @@ def sfx_tap():
     return (np.sin(2 * np.pi * 1800 * t) * np.exp(-90 * t) * 0.25).astype(np.float32)
 
 
+def sfx_dun(gain=1.0, low=False):
+    d = 0.9 if low else 0.32
+    t = np.linspace(0, d, int(SR * d), False)
+    f = 55 if low else 82
+    x = np.sin(2 * np.pi * f * t) + 0.6 * np.sin(2 * np.pi * f * 2 * t) + 0.3 * np.sin(2 * np.pi * f * 3 * t)
+    x += np.random.default_rng(3).uniform(-1, 1, len(t)) * np.exp(-30 * t) * 0.6
+    return (np.tanh(x * 1.5) * np.exp(-(2.5 if low else 7) * t) * 0.32 * gain).astype(np.float32)
+
+
 def place(track, clip, at):
     s = int(at * SR)
     e = min(len(track), s + len(clip))
@@ -175,7 +191,7 @@ def main():
         line_start = start + LEAD[scene]
         line_end = line_start + len(v) / SR
         end = line_end + TAIL[scene]
-        if scene == "sofa":
+        if scene == "docu":
             end += END_CARD
         scenes.append({"name": scene, "start": round(start, 3), "end": round(end, 3)})
         lines.append({
@@ -192,15 +208,19 @@ def main():
         place(voice, v * 0.95, at)
 
     sfx = np.zeros_like(voice)
-    # Surprise sting when she notices the lump, before her line.
-    place(sfx, sfx_boing(), scenes[0]["start"] + 0.9)
-    for sc in scenes[1:]:
-        place(sfx, sfx_whoosh(), sc["start"] - 0.12)
-    # Phone typing taps during the panic scene.
-    for k in range(9):
-        place(sfx, sfx_tap(), scenes[1]["start"] + 0.15 + k * 0.11)
-    # Relief ding on the diagnosis.
-    place(sfx, sfx_ding(), lines[2]["end"] + 0.1)
+    sc = {s["name"]: s for s in scenes}
+    # Dreamy chimes for the flashback.
+    for k in range(4):
+        place(sfx, sfx_ding() * 0.7, sc["girl"]["start"] + 0.1 + k * 0.5)
+    # Surprise sting when she notices the lump.
+    place(sfx, sfx_boing(), sc["mirror"]["start"] + 0.9)
+    for s_ in scenes[1:]:
+        place(sfx, sfx_whoosh(), s_["start"] - 0.12)
+    # "젖…줄?" record scratch-ish boing after the doctor.
+    place(sfx, sfx_boing() * 0.8, lines[2]["end"] + 0.1)
+    # dun · dun · DUN on the three zoom hits.
+    for k, at in enumerate([0.0, 0.35, 0.7]):
+        place(sfx, sfx_dun(1.0 + 0.5 * k, low=k == 2), sc["realize"]["start"] + at)
 
     bgm = music(total + 1)
     bgm = np.pad(bgm, (0, max(0, len(voice) - len(bgm))))[: len(voice)]
@@ -216,7 +236,12 @@ def main():
     fade[end_i - fl:end_i] = np.linspace(1, 0, fl)
     fade[end_i:] = 0
 
-    mix = voice + sfx + bgm * duck * fade
+    r = sc["realize"]
+    s0, s1 = int(r["start"] * SR), int(r["end"] * SR)
+    gap = np.ones_like(voice)
+    gap[s0:s1] = 0.0
+    gap = np.convolve(gap, np.ones(2205) / 2205, mode="same")
+    mix = voice + sfx + bgm * duck * fade * gap
     mix = mix[: int(total * SR)]
     mix = mix / max(1.0, np.abs(mix).max() / 0.95)
     write_wav(os.path.join(out_dir, "mix.wav"), mix)
