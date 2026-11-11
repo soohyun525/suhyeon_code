@@ -1,0 +1,18 @@
+| 용도 | 데이터 | 출처 | 기준 | 비고 |
+|---|---|---|---|---|
+| 행정동별 노지감귤 면적·농가수·생산량, 품종별(극조생·조생·보통) | 제주특별자치도 서귀포시 감귤 생산 정보 | [공공데이터포털 15048184](https://www.data.go.kr/data/15048184/fileData.do) | 2012~2022 | 실제 |
+| 감귤 농가 실제 위치 | JDC 농가 기본정보 | [공공데이터포털 15097167](https://www.data.go.kr/data/15097167/fileData.do) | 2021 | 실제, 서귀포 24곳 |
+| 숙소 위치·객실 수·업태 | 제주관광공사 마을숙박업소 | [공공데이터포털 15109351](https://www.data.go.kr/data/15109351/fileData.do) | 2022-09 | 실제, 영업중만 |
+| 민박 위치 | 서귀포시 안전인증지정민박 현황 | [공공데이터포털 15056410](https://www.data.go.kr/data/15056410/fileData.do) | 2026-06 | 실제 |
+| 버스정류소 위치 | 제주특별자치도 버스정류소 현황 | [공공데이터포털 15010850](https://www.data.go.kr/data/15010850/fileData.do) | 2022-11 | 실제 |
+| 노선 운행 횟수 | 서귀포 시내버스·읍면지선 노선 현황 | [15051473](https://www.data.go.kr/data/15051473/fileData.do), [15051472](https://www.data.go.kr/data/15051472/fileData.do) | 2025-12 | 실제 |
+| 비수기 격차, 저녁 상권 | 업종별 카드 매출과 매장수 (법정동·월별) | [공공데이터포털 15074691](https://www.data.go.kr/data/15074691/fileData.do) | 2017-01~2020-04 | 실제, 법정동→행정동 묶음은 초안 |
+| 전세버스 업체 | 제주특별자치도 전세버스 업체 현황 | [공공데이터포털 15056324](https://www.data.go.kr/data/15056324/fileData.do) | 2025-06 | 실제 |
+| 행정동 경계 | 통계청 2013 읍면동 경계 (southkorea-maps) | [GitHub southkorea/southkorea-maps](https://github.com/southkorea/southkorea-maps) | 2013 | 실제, 단순화 |
+| 배경 지도 | OpenStreetMap 타일 | [openstreetmap.org](https://www.openstreetmap.org/copyright) | — | 브라우저에서 불러옴 |
+| **노지감귤밭 위치** | 위 면적 데이터에서 만든 **추정 점** | `scripts/build_data.py` | — | **실제 필지 아님** |
+| **농가 일손 요청** | 가상 농가 22곳 | `scripts/make_sample_requests.py` | — | **가상** |
+
+**가정값**(일당, 숙박 단가, 전세버스 단가, 1인 처리량, 수확 시기 비중)은 화면 왼쪽에서 바꿀 수 있으며 출처가 없는 값입니다.
+
+**필지 단위 감귤밭 위치를 쓰려면**: 농림수산식품교육문화정보원 [팜맵 조회 서비스](https://www.data.go.kr/data/15057368/openapi.do)(좌표 반경 1km 안의 농경지 필지와 판독 구분 — 논·밭·과수 등)를 인증키로 받아 추정 점을 대체할 수 있습니다. 이번 동작본에는 인증키가 없어 넣지 않았습니다.
