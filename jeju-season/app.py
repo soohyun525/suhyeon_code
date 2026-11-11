@@ -10,8 +10,8 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from season import agent, data, tools
-from season.mapview import build_map
+from season import agent, data, meetups, tools
+from season.mapview import build_map, render_offline
 from season.package import build_packages
 from season.tools import Assumptions
 
@@ -56,7 +56,8 @@ c2.metric("시즌 묶음", f"{len(packages)}개", f"성립 {len(ok)}")
 c3.metric("최대 인원 합계", f"{sum(p.cluster.peak_daily for p in ok)}명/일")
 c4.metric("민박 예상 매출 합계", f"{sum(p.economics['민박']['예상매출'] for p in ok if p.economics) / 1e6:,.1f}백만 원")
 
-tab_map, tab_req, tab_pkg, tab_agent, tab_data = st.tabs(["지도", "농가 일정", "시즌 패키지", "Agent 대화", "데이터·근거"])
+tab_map, tab_req, tab_pkg, tab_youth, tab_agent, tab_data = st.tabs(
+    ["지도", "농가 일정", "시즌 패키지", "청년 시즌", "Agent 대화", "데이터·근거"])
 
 # ───────────────────────── 지도 ─────────────────────────
 with tab_map:
@@ -72,7 +73,7 @@ with tab_map:
             "- **파란 집**: 패키지 거점 숙소 마을, **선**: 아침 셔틀 경로와 정차 순서")
     with r:
         focus = next((p.cluster.centroid for p in packages if focus_id.startswith(p.cluster.id + " ")), None)
-        components.html(build_map(reqs, packages, show_stops=show_stops, focus=focus).get_root().render(), height=660)
+        components.html(render_offline(build_map(reqs, packages, show_stops=show_stops, focus=focus)), height=660)
 
 # ───────────────────────── 농가 일정 ─────────────────────────
 with tab_req:
@@ -144,6 +145,35 @@ with tab_pkg:
                     st.download_button("내려받기 (.txt)", text, file_name=f"{c.id}_{who}_제안서.txt", key=f"dl-{c.id}-{who}")
             st.subheader("전세버스 업체 후보 (서귀포 우선)")
             st.dataframe(pd.DataFrame(p.charters), hide_index=True, width="stretch")
+
+# ───────────────────────── 청년 시즌 ─────────────────────────
+with tab_youth:
+    live = [p for p in packages if p.status == "성립"]
+    if not live:
+        st.info("성립한 시즌이 없습니다. 농가 일정이나 묶기 기준을 바꿔 보세요.")
+    else:
+        st.caption("청년에게 공개되는 화면입니다. 숫자는 패키지 계산 결과(가정값 포함)를 그대로 씁니다. 신청은 농협·제주농업인력지원센터로 합니다.")
+        cols = st.columns(len(live))
+        for col, p in zip(cols, live):
+            card = meetups.season_card(p, a, cohort=1)
+            with col.container(border=True):
+                st.subheader(card["이름"])
+                for key in ["기간", "모집", "숙소", "출근", "실수령"]:
+                    st.markdown(f"**{key}** · {card[key]}")
+                with st.expander("가기 전에 알아 둘 것"):
+                    st.markdown("\n".join(f"- {x}" for x in card["현실점검"]))
+        st.subheader("저녁·주말 밋업 달력")
+        st.caption("같은 농장이 아니어도 함께합니다. 평일은 거점에서 걸어서, 토·일은 시즌 셔틀을 추가 운행합니다(일요일 휴무 가정). "
+                   "버스 시간표 데이터는 받지 못해 막차 대신 셔틀 복귀를 기본으로 했습니다.")
+        cal = meetups.plan_meetups(packages, a)
+        pick = st.multiselect("모임 종류", sorted(cal["모임"].unique()), default=sorted(cal["모임"].unique()))
+        st.dataframe(cal[cal["모임"].isin(pick)], hide_index=True, width="stretch")
+        cost = meetups.weekend_shuttle_cost(cal, a)
+        st.markdown("**주말 셔틀 추가 비용(가정: 1회 = 중형 1일 단가의 50%)** · "
+                    + " · ".join(f"{k} {v / 10_000:,.0f}만 원" for k, v in cost.items()))
+        st.subheader("한 가지 미션 (선택)")
+        st.caption("일손 외에 자기 전공으로 농가·마을에 남기는 결과물 하나. 시즌이 끝나면 경력 기록으로 정리합니다.")
+        st.dataframe(pd.DataFrame(meetups.MISSIONS, columns=["분야", "미션 예시", "남는 것"]), hide_index=True, width="stretch")
 
 # ───────────────────────── Agent 대화 ─────────────────────────
 with tab_agent:

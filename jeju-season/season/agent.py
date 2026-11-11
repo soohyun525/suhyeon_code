@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from . import tools
+from . import meetups, tools
 from .package import SeasonPackage, write_proposals
 from .tools import Assumptions
 
@@ -69,6 +69,7 @@ TOOLS = [
           {"emd": {"type": "string", "description": "읍면동 이름. 전체는 '전체'"}}, ["emd"]),
     _tool("charter_candidates", "제주 전세버스 업체 후보(차량 대수, 서귀포 우선)를 본다.", {}, []),
     _tool("draft_proposals", "계산이 끝난 묶음의 숙소·전세버스·농협용 제안서 초안을 만든다.", CID, ["cluster_id"]),
+    _tool("plan_meetups", "계산이 끝난 묶음들의 시즌 기간에 맞춘 저녁·주말 밋업 달력(독서회, 영화, 공유주방, 한라산)을 만든다.", {}, []),
 ]
 
 
@@ -93,6 +94,18 @@ def _run_tool(state: AgentState, name: str, args: dict):
         return tools.charter_candidates()
     if name == "offseason_gap":
         return tools.offseason_gap(args["emd"], args["sector"])
+    if name == "plan_meetups":
+        done = [cid for cid in state.economics if state.basecamps.get(cid)]
+        if not done:
+            raise ValueError("먼저 묶음별로 plan_shuttle과 check_economics를 호출하세요.")
+        ps = []
+        for cid in done:  # 셔틀을 짠 거점을 맨 앞에 둔다
+            bcs = sorted(state.basecamps[cid], key=lambda b: b["마을"] != state.shuttles[cid].get("거점마을"))
+            ps.append(SeasonPackage(cluster=state.clusters[cid], basecamps=bcs, shuttle=state.shuttles[cid],
+                                    economics=state.economics[cid]))
+        cal = meetups.plan_meetups(ps, a)
+        cal["날짜"] = cal["날짜"].astype(str)
+        return {"달력": cal.to_dict("records"), "주말셔틀추가비용": meetups.weekend_shuttle_cost(cal, a)}
 
     cid = args["cluster_id"]
     if cid not in state.clusters:

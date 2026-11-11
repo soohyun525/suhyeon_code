@@ -131,7 +131,7 @@ def find_basecamps(cluster: Cluster, radius_km: float = 7.0, top: int = 3,
                    a: Assumptions | None = None) -> list[dict]:
     """묶음 중심에서 radius_km 안의 소규모 숙소를 마을 단위로 모아 점수를 매긴다.
 
-    점수 = 수용 가능 인원(최대 인원 대비) · 거리 · 정류소 접근성 · 그 동네 저녁 상권(음식점 매장 수).
+    점수 = 수용 가능 인원(최대 인원 대비) · 거리 · 정류소 접근성 · 그 동네 저녁 상권(음식점 카드 매출).
     객실 수가 비어 있는 민박은 2실로 본다(가정).
     """
     a = a or Assumptions()
@@ -146,7 +146,7 @@ def find_basecamps(cluster: Cluster, radius_km: float = 7.0, top: int = 3,
     lod.loc[lod["마을키"] == "", "마을키"] = (lod["읍면동"] + " " + (lod.lat.round(2)).astype(str))
 
     stops = data.bus_stops()
-    evening = _evening_stores()
+    evening = evening_spend()
     need_people = cluster.peak_daily
     rows = []
     for key, g in lod.groupby("마을키"):
@@ -158,7 +158,7 @@ def find_basecamps(cluster: Cluster, radius_km: float = 7.0, top: int = 3,
             "마을": key, "읍면동": emd, "lat": center[0], "lon": center[1],
             "숙소수": len(g), "객실": int(g["객실_추정"].sum()), "수용인원": cap,
             "중심거리_km": round(float(haversine_km(*cluster.centroid, *center)), 1),
-            "정류소_500m": near_stops, "저녁상권_음식점매장": int(evening.get(emd, 0)),
+            "정류소_500m": near_stops, "저녁상권_음식점매출_백만원": int(evening.get(emd, 0)),
             "숙소목록": g.sort_values("객실_추정", ascending=False)[["name", "업태", "객실수", "전화", "주소", "lat", "lon"]].head(12).to_dict("records"),
         })
     df = pd.DataFrame(rows)
@@ -167,7 +167,7 @@ def find_basecamps(cluster: Cluster, radius_km: float = 7.0, top: int = 3,
         45 * df["수용충족"]
         + 25 * (1 - df["중심거리_km"] / radius_km)
         + 15 * (df["정류소_500m"].clip(upper=6) / 6)
-        + 15 * (df["저녁상권_음식점매장"] / max(df["저녁상권_음식점매장"].max(), 1))
+        + 15 * (df["저녁상권_음식점매출_백만원"] / max(df["저녁상권_음식점매출_백만원"].max(), 1))
     ).round(1)
     out = df.sort_values("점수", ascending=False).head(top).to_dict("records")
     for r in out:
@@ -176,12 +176,14 @@ def find_basecamps(cluster: Cluster, radius_km: float = 7.0, top: int = 3,
     return out
 
 
-def _evening_stores() -> dict[str, int]:
-    """읍면동별 음식점업 매장 수 (카드 데이터, 가장 최근 12월)."""
+def evening_spend() -> dict[str, int]:
+    """읍면동별 저녁 상권 규모 = 음식점업 카드 이용금액(백만 원, 2019-12).
+
+    원자료의 '매장수' 열은 읍면동 규모에 비해 지나치게 커서(예: 남원읍 한식 3,014곳) 쓰지 않는다.
+    """
     c = data.card_monthly()
-    c = c[(c["업종대분류"] == "음식점업") & (c["년월"].str.endswith("-12"))]
-    latest = c["년월"].max()
-    return c[c["년월"] == latest].set_index("읍면동")["매장수"].to_dict()
+    c = c[(c["업종대분류"] == "음식점업") & (c["년월"] == "2019-12")]
+    return (c.set_index("읍면동")["이용금액"] / 1e6).round(0).astype(int).to_dict()
 
 
 # ─────────────────────────── 3. 비수기 격차 ───────────────────────────

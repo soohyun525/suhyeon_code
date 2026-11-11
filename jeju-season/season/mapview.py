@@ -1,18 +1,38 @@
 """folium 지도: 행정동별 노지감귤 면적, 추정 감귤밭, 실제 농가(JDC), 농가 요청, 숙소, 거점·셔틀 경로."""
 from __future__ import annotations
 
+import os
+import re
+
 import folium
 import pandas as pd
 from folium.plugins import MarkerCluster
 
 from . import data
 
+VENDOR_URL = "/app/static/vendor/"  # Streamlit 정적 파일 (.streamlit/config.toml: enableStaticServing)
+CDN = re.compile(r'(src|href)="https://(?:cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|code\.jquery\.com|netdna\.bootstrapcdn\.com)/(?:[^"]*/)?([^/"]+)"')
+
+
+def tiles_setting() -> str | None:
+    """JEJU_SEASON_TILES=none 이면 배경 타일 없이 그린다 (인터넷이 없는 분석 PC용)."""
+    v = os.environ.get("JEJU_SEASON_TILES", "OpenStreetMap")
+    return None if v.lower() == "none" else v
+
+
+def render_offline(m: folium.Map) -> str:
+    """folium이 CDN에서 불러오는 Leaflet 등을 static/vendor 의 로컬 사본으로 바꿔 HTML로 만든다."""
+    html = m.get_root().render()
+    html = re.sub(r'<link[^>]+bootstrap-glyphicons\.css"[^>]*>', "", html)
+    return CDN.sub(lambda mt: f'{mt.group(1)}="{VENDOR_URL}{mt.group(2)}"', html)
+
+
 PALETTE = ["#d9480f", "#1971c2", "#2f9e44", "#9c36b5", "#e67700", "#0c8599"]
 
 
 def build_map(requests: pd.DataFrame, packages: list | None = None, show_stops: bool = False,
               show_lodging: bool = True, focus: tuple[float, float] | None = None) -> folium.Map:
-    m = folium.Map(location=focus or (33.30, 126.56), zoom_start=13 if focus else 10, tiles="OpenStreetMap",
+    m = folium.Map(location=focus or (33.30, 126.56), zoom_start=13 if focus else 10, tiles=tiles_setting(),
                    control_scale=True)
     if focus is None:
         m.fit_bounds([[33.20, 126.17], [33.45, 126.94]])
@@ -36,7 +56,7 @@ def build_map(requests: pd.DataFrame, packages: list | None = None, show_stops: 
 
     jdc = folium.FeatureGroup(name="감귤 농가 실제 위치 (JDC 농가 기본정보)", show=True)
     for r in data.farms_jdc().itertuples():
-        folium.Marker((r.lat, r.lon), icon=folium.Icon(color="green", icon="leaf"),
+        folium.Marker((r.lat, r.lon), icon=folium.Icon(color="green", icon="leaf", prefix="fa"),
                       tooltip=f"{r.농가명} · {r.읍면동}(좌표 기준) · {r.토지면적}㎡").add_to(jdc)
     jdc.add_to(m)
 
@@ -71,7 +91,7 @@ def build_map(requests: pd.DataFrame, packages: list | None = None, show_stops: 
                       tooltip=f"{p.cluster.id} · 농가 {len(p.cluster.farm_ids)}곳 · 최대 {p.cluster.peak_daily}명/일").add_to(g)
         if p.basecamps:
             b = p.basecamps[0]
-            folium.Marker((b["lat"], b["lon"]), icon=folium.Icon(color="blue", icon="home"),
+            folium.Marker((b["lat"], b["lon"]), icon=folium.Icon(color="blue", icon="house", prefix="fa"),
                           tooltip=f"거점 {b['마을']} · 숙소 {b['숙소수']}곳 · 수용 {b['수용인원']}명").add_to(g)
             for s in b["숙소목록"]:
                 folium.CircleMarker((s["lat"], s["lon"]), radius=4, color=color, fill=True, fill_opacity=1,

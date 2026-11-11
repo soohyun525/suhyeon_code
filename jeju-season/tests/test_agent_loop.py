@@ -24,6 +24,7 @@ def test_agent_runs_tool_chain_and_returns_text():
         NS(stop_reason="tool_use", content=[_use(3, "check_economics", {"cluster_id": "S1"}),
                                             _use(4, "offseason_gap", {"emd": "남원읍", "sector": "숙박업"})]),
         NS(stop_reason="tool_use", content=[_use(5, "draft_proposals", {"cluster_id": "S1"})]),
+        NS(stop_reason="tool_use", content=[_use(6, "plan_meetups", {})]),
         NS(stop_reason="end_turn", content=[NS(type="text", text="S1 패키지를 만들었습니다.")]),
     ]
     fake = NS(beta=NS(messages=FakeMessages(script)))
@@ -33,6 +34,7 @@ def test_agent_runs_tool_chain_and_returns_text():
                                  on_event=lambda k, p: events.append((k, p["name"])), client=fake)
     assert text == "S1 패키지를 만들었습니다."
     assert ("tool_result", "draft_proposals") in events
+    assert ("tool_result", "plan_meetups") in events
     assert not [e for e in events if e[0] == "tool_error"]
     assert "S1" in state.economics
     # 병렬 도구 결과는 한 user 메시지에 함께 돌려준다

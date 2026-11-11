@@ -87,3 +87,31 @@ def test_sample_pipeline_end_to_end():
     p = next(p for p in ps if p.status == "성립")
     assert set(p.proposals) == {"숙소", "전세버스", "농협·센터"}
     assert p.cluster.start in p.proposals["전세버스"]
+
+
+def test_meetups_cover_season_and_join_packages():
+    from season import meetups
+    ps = build_packages(data.sample_requests())
+    cal = meetups.plan_meetups(ps)
+    live = [p for p in ps if p.status == "성립"]
+    assert set(cal["묶음"]) == {p.cluster.id for p in live}
+    for p in live:
+        d = pd.to_datetime(cal[cal["묶음"] == p.cluster.id]["날짜"])
+        assert d.min() >= pd.Timestamp(p.cluster.start) and d.max() <= pd.Timestamp(p.cluster.end)
+    sat = cal[cal["요일"] == "토"]
+    assert sat["장소"].nunique() == 1  # 여러 거점이 같은 곳에서 만난다
+    assert (cal[cal["요일"] == "일"]["모임"].str.contains("한라산")).all()
+    card = meetups.season_card(live[0])
+    assert live[0].cluster.start in card["기간"]
+
+
+def test_map_html_has_no_cdn_links():
+    import re
+    from season.mapview import build_map, render_offline
+    r = data.sample_requests()
+    html = render_offline(build_map(r, build_packages(r)))
+    urls = re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"', html)
+    assert urls and all(u.startswith("/app/static/vendor/") for u in urls)
+    import pathlib
+    vendor = pathlib.Path(data.ROOT, "static", "vendor")
+    assert all((vendor / u.rsplit("/", 1)[1]).exists() for u in urls)
