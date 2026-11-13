@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>언러닝클럽 릴스 002 · 캐릭터 버전</title>
+<link rel="stylesheet" href="node_modules/@fontsource/bagel-fat-one/index.css">
+<link rel="stylesheet" href="node_modules/@fontsource/jua/index.css">
+<link rel="stylesheet" href="node_modules/@fontsource/gaegu/700.css">
+<style>
+:root{--ink:#121212;--lime:#b7f400;--pur:#8a1cf6;--bg:#fdfdfb;--red:#f0453a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#222;overflow:hidden}
+#stage{position:relative;width:1080px;height:1920px;background:var(--bg);overflow:hidden;font-family:'Jua',sans-serif;color:var(--ink)}
+.scene{position:absolute;inset:0;visibility:hidden}
+.scene.on{visibility:visible}
+.abs{position:absolute}
+.bagel{font-family:'Bagel Fat One','Jua',sans-serif;font-weight:400}
+.gaegu{font-family:'Gaegu','Jua',sans-serif;font-weight:700;letter-spacing:-3px}
+.boil{filter:url(#boil)}
+.boil2{filter:url(#boil2)}
+svg{overflow:visible}
+.ink{fill:none;stroke:var(--ink);stroke-linecap:round;stroke-linejoin:round}
+
+/* --- animation primitives (delay = absolute time on the global timeline) --- */
+.pop{animation:pop .42s calc(var(--s) + var(--d)) both cubic-bezier(.2,1.5,.4,1)}
+@keyframes pop{0%{opacity:0;transform:scale(.3) rotate(var(--r0,-6deg))}1%{opacity:1}100%{opacity:1;transform:scale(1) rotate(var(--r,0deg))}}
+.slam{animation:slam .3s calc(var(--s) + var(--d)) both cubic-bezier(.2,.9,.3,1.25)}
+@keyframes slam{0%{opacity:0;transform:scale(2.6) rotate(var(--r0,4deg))}1%{opacity:1}100%{opacity:1;transform:scale(1) rotate(var(--r,0deg))}}
+.up{animation:up .5s calc(var(--s) + var(--d)) both cubic-bezier(.2,1.3,.4,1)}
+@keyframes up{0%{opacity:0;transform:translateY(var(--y,140px)) rotate(var(--r,0deg))}1%{opacity:1}100%{opacity:1;transform:translateY(0) rotate(var(--r,0deg))}}
+.fade{animation:fade .35s calc(var(--s) + var(--d)) both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.draw{stroke-dasharray:1;animation:draw var(--dur,.45s) calc(var(--s) + var(--d)) both cubic-bezier(.5,0,.3,1)}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.wig{animation:wig 1.1s infinite ease-in-out}
+@keyframes wig{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+.bob{animation:bob .8s infinite ease-in-out}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.shiver{animation:shiver .12s infinite linear}
+@keyframes shiver{0%{transform:translate(-4px,1px)}50%{transform:translate(4px,-2px)}100%{transform:translate(-4px,1px)}}
+.shake{animation:shake .5s calc(var(--s) + var(--d)) both}
+@keyframes shake{0%{transform:translate(0,0)}15%{transform:translate(-22px,12px)}30%{transform:translate(20px,-14px)}45%{transform:translate(-14px,-8px)}60%{transform:translate(12px,8px)}80%{transform:translate(-5px,3px)}100%{transform:translate(0,0)}}
+.pulse{animation:pulse .7s infinite ease-in-out}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+.blinkout{animation:blinkout .5s calc(var(--s) + var(--d)) both}
+@keyframes blinkout{0%{opacity:1}100%{opacity:0;transform:translateY(-40px) scale(.8)}}
+.yank{animation:yank .5s calc(var(--s) + var(--d)) both cubic-bezier(.3,1.6,.5,1)}
+@keyframes yank{from{transform:translate(0,0) rotate(0)}to{transform:translate(150px,-70px) rotate(18deg)}}
+.zoom{animation:zoom 3.2s calc(var(--s) + var(--d)) both linear}
+@keyframes zoom{from{transform:scale(1)}to{transform:scale(1.04)}}
+
+/* --- shared pieces --- */
+.brand{left:64px;top:150px;font-size:44px;color:var(--pur);line-height:.9;letter-spacing:-1px}
+.brand i{display:block;height:8px;width:112px;background:var(--lime);border-radius:8px;margin-top:8px;transform:rotate(-2deg)}
+.ep{right:64px;top:160px;font-size:34px;color:#888}
+.time{left:64px;top:290px;display:flex;align-items:center;gap:22px;transform-origin:left center}
+.time .t{font-size:118px;line-height:1;letter-spacing:-2px}
+.time .ampm{font-size:50px;margin-right:-6px;align-self:flex-end;padding-bottom:14px}
+.tag{display:inline-block;background:var(--lime);border:6px solid var(--ink);border-radius:60px;padding:10px 30px 8px;font-size:46px;white-space:nowrap}
+.tag.p{background:var(--pur);color:#fff}
+.tag.k{background:var(--ink);color:var(--lime)}
+.bub{position:absolute;max-width:780px;background:#fff;border:7px solid var(--ink);border-radius:46px;padding:30px 42px 26px;font-size:62px;line-height:1.22;transform-origin:left bottom;box-shadow:10px 12px 0 var(--ink)}
+.bub.r{transform-origin:right bottom}
+.bub.b{background:var(--lime)}
+.bub.c{background:var(--ink);color:#fff;box-shadow:10px 12px 0 var(--pur)}
+.bub.c .hl{background:none;color:var(--lime)}
+.bub .w{position:absolute;top:-56px;left:8px;font-size:38px;color:#777;white-space:nowrap;font-family:'Jua'}
+.bub.r .w{left:auto;right:8px}
+.bub.pu{background:var(--pur);color:#fff}
+.who{position:absolute;font-size:36px;color:#777}
+.note{font-size:60px;color:var(--pur);line-height:1.1}
+.hl{background:linear-gradient(transparent 52%,var(--lime) 52%,var(--lime) 94%,transparent 94%)}
+</style>
+
+<style>
+.bub.t{position:absolute;bottom:690px;max-width:900px;font-size:70px;line-height:1.24;padding:34px 46px 30px;visibility:hidden}
+.bub.t.big{font-size:150px;padding:20px 56px 14px}
+.bub.t::after{content:'';position:absolute;bottom:-27px;left:var(--tx);width:44px;height:44px;background:inherit;border-right:7px solid var(--ink);border-bottom:7px solid var(--ink);transform:rotate(45deg)}
+.bub.t.prev::after{display:none}
+.bub.t.a{left:70px;--tx:120px;transform-origin:150px 100%}
+.bub.t.b{left:0;right:0;margin:0 auto;width:fit-content;--tx:calc(50% - 22px);transform-origin:50% 100%}
+.bub.t.c{right:70px;--tx:calc(100% - 190px);transform-origin:calc(100% - 150px) 100%}
+.actor{position:absolute;top:1290px;width:320px;text-align:center;transform-origin:50% 85%}
+.actor .nm{display:inline-block;margin-top:6px;font-size:40px;border:6px solid var(--ink);border-radius:40px;padding:4px 22px 2px;background:#fff}
+.actor.b .nm{background:var(--lime)} .actor.c .nm{background:var(--ink);color:#fff;border-color:var(--pur)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <filter id="boil" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence class="seed" type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="1" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="boil2" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence class="seed" type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="1" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<div id="stage"></div>
+<script src="voice3.js"></script>
+<script>
+const V=window.VOICE||{dur:{},env:{}};
+const H='<span class="hl">',E='</span>';
+/* ---------- script ---------- */
+const SC=[
+ {type:'hook', narr:[{id:'n1',say:'모든 회의를 녹음하는 회사?'},{id:'n2',say:'그리고 정확히, 이십이 분 뒤.'}]},
+ {type:'talk', time:'5:31', tag:'오늘의 주제', lines:[
+  {w:'c',html:`${H}모든 회의를 녹음${E}해서<br>AI 에이전트들이 히스토리를<br>공유받는 회사들이<br>있다는데영!<br>다들 해보고 싶은지?`,say:'모든 회의를 녹음해서, AI 에이전트들이 히스토리를 공유받는 회사들이 있다는데요! 다들 해보고 싶은지?',fs:62},
+  {w:'a',html:`오오! 저는<br>${H}써보고 싶어요!${E}`,say:'오오! 저는 써보고 싶어요!',emo:{a:'happy'}}]},
+ {type:'talk', time:'5:47', tag:'예상 부작용', cls:'p', rot:3, lines:[
+  {w:'c',html:'진짜 오프더레코드는<br>녹음기 끄고<br>하게 되겠네요 ㅋㅋ',say:'진짜 오프 더 레코드는, 녹음기 끄고 하게 되겠네요.'},
+  {w:'c',html:`약간 매일<br>${H}연극하는 분위기${E}<br>일지도ㅠㅠ`,say:'약간, 매일 연극하는 분위기일지도.',emo:{c:'sad'}}]},
+ {type:'talk', time:'5:51', tag:'근데 오히려?', foot:'*직내괴 = 직장 내 괴롭힘', lines:[
+  {w:'a',html:'직내괴도 많이<br>없어질 것 같아요',say:'직내괴도 많이 없어질 것 같아요.'},
+  {w:'c',html:`바로 ${H}직내괴 감지${E}<br>→ 인사팀 자동발송!!`,say:'바로 직내괴 감지! 인사팀 자동 발송!',emo:{c:'happy'}},
+  {w:'c',html:'이거 오히려<br>꿀일지도..?',say:'이거, 오히려 꿀일지도?',emo:{a:'happy',c:'happy'}}]},
+ {type:'talk', time:'5:53', tag:'잠깐만요', cls:'k', rot:-3, lines:[
+  {w:'b',html:`이미 사내에<br>거의 대부분의 분들이<br>${H}녹음기 켜고${E}<br>회의 들어오시던데영..`,say:'이미 사내에 거의 대부분의 분들이, 녹음기 켜고 회의 들어오시던데요?',emo:{a:'wide',c:'wide'}},
+  {w:'c',html:'아 진짜요?',say:'아, 진짜요?',emo:{a:'wide',c:'wide'}}],
+  punch:{id:'n3',say:'이미, 다들, 녹음 중.'}},
+ {type:'talk', time:'5:54', tag:'자백', lines:[
+  {w:'b',html:`근데 뭐 회의는 공적이라..<br>${H}저도 사실 켜고${E}`,say:'근데 뭐, 회의는 공적이라. 저도 사실 켜고.',fs:62},
+  {w:'a',html:'<span class="bagel" style="color:var(--pur);line-height:1.1">잡았다</span>',say:'잡았다!',big:1,emo:{a:'happy',b:'wide'}},
+  {w:'c',html:`원래 녹음 전에<br>${H}알려주는 게 매너${E}인데`,say:'원래 녹음 전에 알려주는 게 매너인데.',emo:{c:'lazy'}}]},
+ {type:'talk', time:'5:56', tag:'나만 몰랐네', cls:'p', rot:3, lines:[
+  {w:'a',html:'남편도 그러더라고요<br>“요즘 누가 회의록 쓰냐~<br>녹음해서 바로 딸깍이지”',say:'남편도 그래요. 요즘 누가 회의록 쓰냐, 녹음해서 딸깍이지.',fs:60},
+  {w:'c',html:'나만 바보 만들지 말구<br>좀 알려줘라!!',say:'나만 바보 만들지 말고, 좀 알려줘라!',emo:{c:'wide'}}]},
+ {type:'talk', time:'5:57', tag:'그래서 갈림', cls:'k', rot:-3, lines:[
+  {w:'b',html:'엥 두 분 다<br>안 썼어요?',say:'엥? 두 분 다 안 썼어요?',emo:{b:'wide'}},
+  {w:'a',html:`허락 없이 녹음하는 거<br>${H}맘에 걸려요,,${E}`,say:'허락 없이 녹음하는 거, 맘에 걸려요.',emo:{a:'sad'}},
+  {w:'b',html:`회의 → 녹음 → 클로드 전달<br>개발 & 문서<br>${H}둘 다 딸깍${E}인데..`,say:'회의, 녹음, 클로드 전달. 개발이랑 문서 둘 다 딸깍인데.',fs:62},
+  {w:'c',html:'착한아이<br>컴플렉스인가 ㅋㅋㅋ',say:'착한 아이 컴플렉스인가?',emo:{c:'happy'}}]},
+ {type:'rule', narr:[{id:'n4',say:'룰 넘버 파이브.'},{id:'n5',say:'몰래 딸깍 말고, 말하고 딸깍.'}]},
+ {type:'join'}
+];
+const CAST={a:{x:40,name:'멤버 A',eyes:'lazy',fill:'#fff',stroke:'#121212'},b:{x:380,name:'멤버 B',eyes:'happy',fill:'#b7f400',stroke:'#121212',rec:1},c:{x:720,name:'멤버 C',eyes:'round',fill:'#fff',stroke:'#8a1cf6'}};
+
+/* ---------- mascot (all eye variants inside, toggled per frame) ---------- */
+function charSVG(o){
+  const w=o.w||320, st=o.stroke||'#121212';
+  const eyes={
+   lazy:x=>`<ellipse cx="${x}" cy="208" rx="26" ry="21" fill="#fff" stroke="#121212" stroke-width="7"/><path d="M${x-25} 208 A25 20 0 0 1 ${x+25} 208 Z" fill="#e9e4d8" stroke="#121212" stroke-width="6"/><path d="M${x-11} 210 a11 11 0 0 0 22 0 z" fill="#121212"/>`,
+   happy:x=>`<path class="ink" stroke-width="9" d="M${x-20} 214 Q${x} 186 ${x+20} 214"/>`,
+   round:x=>`<ellipse cx="${x}" cy="208" rx="24" ry="25" fill="#fff" stroke="#121212" stroke-width="7"/><circle cx="${x+3}" cy="211" r="10" fill="#121212"/><circle cx="${x+7}" cy="206" r="3.5" fill="#fff"/>`,
+   wide:x=>`<ellipse cx="${x}" cy="206" rx="26" ry="31" fill="#fff" stroke="#121212" stroke-width="7"/><circle cx="${x+1}" cy="208" r="6" fill="#121212"/>`,
+   sad:x=>`<path class="ink" stroke-width="9" d="M${x-20} 200 Q${x} 226 ${x+20} 200"/><path d="M${x+(x<220?-24:24)} 226 q10 18 0 26 q-10 -8 0 -26z" fill="#8a1cf6"/>`};
+  const eg=Object.keys(eyes).map(k=>`<g class="eye e-${k}" style="display:${k===o.eyes?'':'none'}">${eyes[k](190)}${eyes[k](252)}</g>`).join('');
+  let extra='';
+  if(o.rec) extra+=`<path class="ink" stroke-width="10" d="M335 250 C380 250 392 210 398 180"/><g transform="rotate(10 410 120)"><rect x="368" y="50" width="88" height="150" rx="18" fill="#121212"/><rect x="380" y="64" width="64" height="112" rx="8" fill="#fff"/><circle cx="412" cy="110" r="20" fill="#f0453a"/><rect x="394" y="146" width="36" height="8" rx="4" fill="#121212"/></g>`;
+  return `<svg class="boil" width="${w}" height="${w*460/520}" viewBox="-10 -20 520 460">
+    <circle cx="215" cy="235" r="112" fill="${o.fill||'#fff'}"/>
+    <path class="ink" style="stroke:${st}" stroke-width="46" d="M282 300 C250 326 180 326 142 292 C112 264 86 262 85 235 A130 130 0 1 1 345 235 A130 130 0 0 1 215 365 A130 130 0 0 1 85 235 L85 30"/>
+    ${eg}<ellipse class="mouth" cx="221" cy="254" rx="15" ry="0" fill="#121212"/>
+    <path class="ink" style="stroke:${st}" stroke-width="20" d="M170 372 L166 425 L196 428 M262 372 L266 425 L296 428"/>${extra}</svg>`;
+}
+const castRow=(top,w,tags,d0)=>Object.entries(CAST).map(([k,c],i)=>`<div class="abs ${d0!=null?'up':''}" style="left:${c.x+(320-w)/2}px;top:${top}px;width:${w}px;text-align:center;--d:${(d0||0)+i*.15}s;--y:500px"><div class="wig" style="transform-origin:50% 90%;animation-delay:${-i*.37}s">${charSVG({...c,w})}</div>${tags?`<span class="nm" style="display:inline-block;font-size:36px;border:6px solid ${k==='c'?'#8a1cf6':'#121212'};border-radius:40px;padding:4px 20px 2px;background:${k==='b'?'#b7f400':k==='c'?'#121212':'#fff'};color:${k==='c'?'#fff':'#121212'}">${c.name}</span>`:''}</div>`).join('');
+
+/* ---------- timeline ---------- */
+const syl=s=>(s.match(/[가-힣A-Za-z0-9]/g)||[]).length, est=s=>.35+syl(s)/7.6;
+const dur=l=>V.dur[l.id]||est(l.say);
+let T=0; const TL=[], MARKS=[]; let lid=0;
+SC.forEach(sc=>{
+  sc.s=T;
+  if(sc.type==='hook'){ let c=T+.45; sc.narr.forEach(n=>{n.s=c;n.dur=dur(n);c+=n.dur+.3;TL.push({...n,who:'n'});}); sc.e=Math.max(T+3.6,c+.2);
+    MARKS.push(['slam',T+.5],['slam',T+.8],['slam',T+1.1],['pop',sc.narr[1].s]); }
+  else if(sc.type==='talk'){ let c=T+.6; MARKS.push(['sting',T+.02]);
+    sc.lines.forEach(l=>{l.id='l'+(++lid);l.s=c;l.dur=dur(l);l.e=c+l.dur;c=l.e+.16;TL.push({id:l.id,who:l.w,s:l.s,dur:l.dur,say:l.say});MARKS.push([l.big?'boom':'pop',l.s,l.w]);});
+    if(sc.punch){sc.punch.s=c+.25;sc.punch.dur=dur(sc.punch);sc.punchS=c;TL.push({...sc.punch,who:'n'});MARKS.push(['punch',c]);c=sc.punch.s+sc.punch.dur+.5;}
+    sc.e=c+.15; }
+  else if(sc.type==='rule'){ let c=T+.3; sc.narr.forEach(n=>{n.s=c;n.dur=dur(n);c+=n.dur+.35;TL.push({...n,who:'n'});}); sc.e=Math.max(T+4.6,c+1.2); MARKS.push(['slam',T+.02],['pop',sc.narr[1].s],['pop',sc.narr[1].s+.4],['pop',sc.e-1.9]); }
+  else { sc.e=T+3; MARKS.push(['outro',T]); }
+  T=sc.e;
+});
+const DURATION=T; window.TL=TL; window.MARKS=MARKS; window.DURATION=DURATION; window.SCENES=SC.map(s=>[s.s,s.e,s.type]);
+
+/* ---------- build DOM ---------- */
+const stage=document.getElementById('stage');
+const brand='<div class="abs brand bagel">언러닝<br>클럽<i></i></div>';
+SC.forEach((sc,si)=>{
+  const el=document.createElement('section'); el.className='scene'; el.style.setProperty('--s',sc.s+'s'); sc.el=el;
+  if(sc.type==='hook'){
+    const d2=(sc.narr[1].s-sc.s).toFixed(2);
+    el.innerHTML=`<div class="abs tag pop boil2" style="left:64px;top:270px;--d:.05s;--r:-3deg">실화 · 사내 AI 스터디방</div>
+    <div class="abs gaegu note pop" style="left:70px;top:400px;font-size:66px;--d:.1s;--r:-2deg;transform-origin:left center">단톡방에 던져본 오늘의 주제</div>
+    <div class="abs bagel boil2" style="left:60px;top:500px;font-size:178px;line-height:1.1;letter-spacing:-5px">
+      <div class="slam" style="--d:.5s;transform-origin:left center">모든 회의를</div><div class="slam" style="--d:.8s;transform-origin:left center;color:var(--pur)">녹음하는</div><div class="slam" style="--d:1.1s;transform-origin:left center">회사?!</div></div>
+    <svg class="abs boil" style="left:50px;top:1100px" width="900" height="80" viewBox="0 0 900 80"><path class="draw" pathLength="1" style="--d:1.35s;--dur:.4s" d="M10 30 L620 22 L300 52 L520 58" fill="none" stroke="#b7f400" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="abs gaegu note pop" style="left:70px;top:1180px;font-size:76px;--d:${d2}s;--r:-4deg;transform-origin:left center">그리고 정확히 <span class="bagel" style="font-size:140px;color:var(--ink)">${H}22분${E}</span> 뒤…</div>
+    ${castRow(1400,290,true,1.2)}`;
+  } else if(sc.type==='talk'){
+    let h=`${brand}<div class="abs time slam" style="--d:.02s"><span class="ampm bagel">오후</span><span class="t bagel">${sc.time}</span><span class="tag ${sc.cls||''} boil2" style="transform:rotate(${sc.rot||-4}deg)">${sc.tag}</span></div>`;
+    if(sc.foot) h+=`<div class="abs fade" style="left:70px;top:436px;font-size:38px;color:#888;--d:.3s">${sc.foot}</div>`;
+    h+=sc.lines.map(l=>`<div class="bub t ${l.w} ${l.big?'big':''} boil2" data-l="${l.id}" style="${l.fs?`font-size:${l.fs}px`:''}">${l.html}</div>`).join('');
+    h+=Object.entries(CAST).map(([k,c])=>`<div class="actor ${k}" data-a="${k}" style="left:${c.x}px">${charSVG(c)}<span class="nm">${c.name}</span></div>`).join('');
+    if(sc.punch){ const d=(sc.punchS-sc.s);
+      h+=`<div class="abs shake punch" style="inset:0;--d:${d}s;visibility:hidden"><div class="abs" style="inset:0;background:var(--ink)"></div>
+      <div class="abs gaegu fade" style="left:70px;top:500px;font-size:72px;color:#aaa;--d:${d+.05}s">토론할 필요가 없었음:</div>
+      <div class="abs bagel slam boil2" style="left:60px;top:620px;font-size:230px;line-height:1.06;color:#fff;letter-spacing:-5px;--d:${d}s;transform-origin:left center">이미<br><span style="color:var(--lime)">다들</span><br><span style="color:var(--lime)">녹음 중</span></div>
+      <div class="abs fade" style="left:850px;top:1180px;--d:${d+.2}s"><div class="pulse" style="width:110px;height:110px;border-radius:50%;background:var(--red)"></div></div>
+      <div class="abs bagel pop" style="left:66px;top:1440px;font-size:110px;color:var(--pur);--d:${d+.9}s;transform-origin:left center;filter:brightness(1.5)">ㅋㅋㅋㅋㅋㅋㅋ</div></div>`; }
+    el.innerHTML=h;
+    sc.lines.forEach(l=>l.el=el.querySelector(`[data-l="${l.id}"]`));
+    sc.actors={}; el.querySelectorAll('.actor').forEach(a=>sc.actors[a.dataset.a]=a);
+    sc.punchEl=el.querySelector('.punch');
+  } else if(sc.type==='rule'){
+    const d2=(sc.narr[1].s-sc.s), d3=(sc.e-sc.s-1.9).toFixed(2);
+    el.innerHTML=`<div class="abs bagel slam boil2" style="left:64px;top:230px;font-size:214px;letter-spacing:-5px;line-height:1;--d:.02s;transform-origin:left center">RULE #5</div>
+    <svg class="abs boil" style="left:60px;top:470px" width="900" height="90" viewBox="0 0 900 90"><path class="draw" pathLength="1" style="--d:.3s;--dur:.4s" d="M10 28 L640 22 L330 56 L560 62" fill="none" stroke="#b7f400" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    ${castRow(640,300,false,.4)}
+    <div class="abs bagel boil2" style="left:64px;top:1080px;font-size:150px;line-height:1.12;letter-spacing:-4px"><div class="up" style="--d:${d2}s;--y:60px">몰래 딸깍 말고,</div><div class="up" style="--d:${d2+.4}s;--y:60px"><span style="color:var(--pur)">말하고 딸깍.</span></div></div>
+    <div class="abs tag pop boil2" style="left:64px;top:1500px;font-size:50px;--d:${d3}s;--r:-2deg;transform-origin:left center;padding:16px 34px 12px">여러분 회의는 지금 녹음 중인가요?</div>
+    <div class="abs bagel fade" style="right:60px;top:1640px;font-size:52px;color:var(--pur);line-height:.9;text-align:center;--d:${d2+.6}s">언러닝<br>클럽<i style="display:block;height:8px;background:var(--lime);border-radius:8px;margin-top:8px;transform:rotate(-2deg)"></i></div>`;
+  } else { el.style.background='#fdfdfd'; el.innerHTML=`<img class="abs zoom" src="join.png" style="left:113.5px;top:38px;height:1844px;--d:0s">`; }
+  stage.appendChild(el);
+});
+
+/* ---------- per-frame ---------- */
+const seeds=[...document.querySelectorAll('.seed')];
+const back=k=>{const c=1.70158;k-=1;return 1+ (c+1)*k*k*k + c*k*k;};
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+function seek(t){
+  SC.forEach(sc=>sc.el.classList.toggle('on', t>=sc.s && t<sc.e));
+  document.getAnimations().forEach(a=>{a.pause();a.currentTime=t*1000;});
+  const sd=1+Math.floor(t*8)%6; seeds.forEach(f=>f.setAttribute('seed',sd));
+  SC.forEach(sc=>{ if(sc.type!=='talk') return;
+    if(t<sc.s||t>=sc.e){ sc.lines.forEach(l=>l.el.style.visibility='hidden'); if(sc.punchEl) sc.punchEl.style.visibility='hidden'; return; }
+    const L=sc.lines; let cur=-1; L.forEach((l,i)=>{ if(t>=l.s) cur=i; });
+    const inPunch=sc.punchS!=null && t>=sc.punchS;
+    if(sc.punchEl) sc.punchEl.style.visibility=inPunch?'visible':'hidden';
+    L.forEach((l,i)=>{ const e=l.el;
+      if(i>cur||i<cur-2||inPunch){e.style.visibility='hidden';return;}
+      e.style.visibility='visible';
+      const bx='';
+      if(i===cur){ const k=cl((t-l.s)/.28); e.classList.remove('prev'); e.style.opacity=1; e.style.transform=`${bx}scale(${.4+.6*back(k)})`; }
+      else { const c=L[cur], k=cl((t-c.s)/.25), h=c.el.offsetHeight+60; e.classList.add('prev');
+        if(i===cur-1){ e.style.opacity=1-.6*k; e.style.transform=`${bx}translateY(${-h*k}px) scale(${1-.14*k})`; }
+        else { const h1=L[cur-1].el.offsetHeight+60; e.style.opacity=.4*(1-cl(k*2)); e.style.transform=`${bx}translateY(${-(h1+h*k)}px) scale(.86)`; } }
+    });
+    const l=cur>=0?L[cur]:null;
+    for(const k in sc.actors){ const a=sc.actors[k], c=CAST[k];
+      const sp=l&&l.w===k&&t<l.e+.1, tau=l?t-l.s:0;
+      const wgt=sp?cl(tau/.15)*cl((l.e+.1-t)/.12):0;
+      const env=sp?(V.env[l.id]?(V.env[l.id][Math.round(tau*30)]||0):Math.abs(Math.sin(tau*17))*(.55+.45*Math.sin(tau*5.3+1))):0;
+      a.style.transform=`translateY(${-18*wgt-10*wgt*Math.abs(Math.sin(tau*9))}px) scale(${.92+.2*wgt})`;
+      a.querySelector('.mouth').setAttribute('ry', sp?(2+11*cl(env)).toFixed(1):0);
+      const emo=(l&&l.emo&&l.emo[k])||c.eyes;
+      a.querySelectorAll('.eye').forEach(g=>g.style.display=g.classList.contains('e-'+emo)?'':'none');
+    }
+  });
+}
+window.seek=seek;
+if(!location.search.includes('render')){
+  const k=Math.min(innerHeight/1920, innerWidth/1080); stage.style.transformOrigin='0 0'; stage.style.transform=`scale(${k})`;
+  const t0=performance.now(); (function loop(){seek(((performance.now()-t0)/1000)%DURATION);requestAnimationFrame(loop);})();
+}
+</script>
+</body>
+</html>
