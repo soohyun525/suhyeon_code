@@ -1,13 +1,12 @@
 'use client';
 
-// Three.js 배경: 종이 위에 떠 있는 점(에이전트)들의 3D 그물.
-// 붉은 점 두 개가 "나"와 "상대" — stage.p 가 커질수록 가까워지고 점선으로 이어진다.
+// Three.js 배경: 분홍 점 두 개가 "나"와 "상대" — stage.p 가 커질수록 가까워지고 점선으로 이어진다.
+// (배경을 채우던 점 그물은 뺐다.)
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { stage } from './stage';
 
-const INK = new THREE.Color('#c58fa3');
 const BRAND = new THREE.Color('#ff7fa6');
 const PAPER = new THREE.Color('#fff3f6');
 
@@ -51,56 +50,18 @@ export default function Scene() {
       return; // WebGL이 없으면 종이 배경만 보인다
     }
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const small = window.innerWidth < 720;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     el.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(PAPER, 8, 46);
     const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 80);
-    const cloud = new THREE.Group();
-    scene.add(cloud);
 
-    // 점 구름 — 시드 고정 난수로 매번 같은 배치
-    let seed = 7;
-    const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-    const N = small ? 420 : 900;
-    const pos = new Float32Array(N * 3);
-    const size = new Float32Array(N);
-    for (let i = 0; i < N; i++) {
-      pos[i * 3] = (rnd() - 0.5) * 44;
-      pos[i * 3 + 1] = (rnd() - 0.5) * 26;
-      pos[i * 3 + 2] = 6 - rnd() * 48;
-      size[i] = 0.6 + rnd() * 1.6;
-    }
-    const pGeo = new THREE.BufferGeometry();
-    pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    pGeo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
     const pointMat = (color: THREE.Color, opacity: number) =>
       new THREE.ShaderMaterial({
         vertexShader: POINT_VERT, fragmentShader: POINT_FRAG, transparent: true, depthWrite: false,
         uniforms: { uColor: { value: color }, uOpacity: { value: opacity }, uScale: { value: 1 }, uMax: { value: 1 } },
       });
-    const inkMat = pointMat(INK, 0.7);
-    cloud.add(new THREE.Points(pGeo, inkMat));
-
-    // 가까운 점끼리 잇는 가는 선
-    const seg: number[] = [];
-    const LIMIT = small ? 3.6 : 3.2;
-    for (let i = 0; i < N; i++) {
-      let links = 0;
-      for (let j = i + 1; j < N && links < 2; j++) {
-        const dx = pos[i * 3] - pos[j * 3], dy = pos[i * 3 + 1] - pos[j * 3 + 1], dz = pos[i * 3 + 2] - pos[j * 3 + 2];
-        if (dx * dx + dy * dy + dz * dz < LIMIT * LIMIT) {
-          seg.push(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], pos[j * 3], pos[j * 3 + 1], pos[j * 3 + 2]);
-          links++;
-        }
-      }
-    }
-    const lGeo = new THREE.BufferGeometry();
-    lGeo.setAttribute('position', new THREE.Float32BufferAttribute(seg, 3));
-    const lMat = new THREE.LineBasicMaterial({ color: INK, transparent: true, opacity: 0.2 });
-    cloud.add(new THREE.LineSegments(lGeo, lMat));
 
     // 나와 상대 — 브랜드색 점 두 개와 둘을 잇는 점선
     const nodeGeo = new THREE.SphereGeometry(0.16, 24, 16);
@@ -142,9 +103,7 @@ export default function Scene() {
       camera.fov = w < h ? 64 : 50; // 세로 화면에서는 더 넓게
       camera.updateProjectionMatrix();
       const scale = h * renderer.getPixelRatio() * 0.11;
-      inkMat.uniforms.uScale.value = scale;
       linkMat.uniforms.uScale.value = scale;
-      inkMat.uniforms.uMax.value = renderer.getPixelRatio();
       linkMat.uniforms.uMax.value = renderer.getPixelRatio() * 0.45;
     };
     const onMove = (e: PointerEvent) => {
@@ -203,8 +162,6 @@ export default function Scene() {
       camera.position.set(Math.sin(p * 2.4) * 2.2 + mouse.x * 0.9, 0.6 - p * 0.6 - mouse.y * 0.6, 11 - p * 11);
       camera.lookAt(mouse.x * 0.4, 0, camera.position.z - 12);
       ring.lookAt(camera.position);
-      cloud.rotation.z = Math.sin(t * 0.05) * 0.04;
-      cloud.position.y = Math.sin(t * 0.12) * 0.4;
 
       renderer.render(scene, camera);
       if (!reduce) raf = requestAnimationFrame(frame);
@@ -224,8 +181,8 @@ export default function Scene() {
       window.removeEventListener('resize', resize);
       window.removeEventListener('pointermove', onMove);
       document.removeEventListener('visibilitychange', onVis);
-      [pGeo, lGeo, nodeGeo, linkGeo, ring.geometry].forEach((g) => g.dispose());
-      [inkMat, lMat, nodeMat, glowMat, linkMat, ringMat].forEach((m) => m.dispose());
+      [nodeGeo, linkGeo, ring.geometry].forEach((g) => g.dispose());
+      [nodeMat, glowMat, linkMat, ringMat].forEach((m) => m.dispose());
       renderer.dispose();
       renderer.domElement.remove();
     };
