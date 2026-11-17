@@ -30,11 +30,11 @@ export const DEALBREAKERS: { id: Dealbreaker; label: string }[] = [
   { id: 'other_city', label: '다른 도시 (장거리)' },
 ];
 export const DATE_STYLES: { id: DateStyle; label: string; venue: string }[] = [
-  { id: 'coffee', label: '☕ 카페', venue: '조용한 카페에서 커피 한 잔' },
-  { id: 'meal', label: '🍝 식사', venue: '예약되는 캐주얼 식당에서 식사' },
-  { id: 'walk', label: '🌿 산책', venue: '공원 산책 + 테이크아웃 커피' },
-  { id: 'culture', label: '🖼️ 전시', venue: '전시 관람 후 근처 카페' },
-  { id: 'activity', label: '🎨 클래스', venue: '원데이 클래스 함께 듣기' },
+  { id: 'coffee', label: '카페', venue: '조용한 카페에서 커피 한 잔' },
+  { id: 'meal', label: '식사', venue: '예약되는 캐주얼 식당에서 식사' },
+  { id: 'walk', label: '산책', venue: '공원 산책 + 테이크아웃 커피' },
+  { id: 'culture', label: '전시', venue: '전시 관람 후 근처 카페' },
+  { id: 'activity', label: '클래스', venue: '원데이 클래스 함께 듣기' },
 ];
 export const DRINKS: { id: Drink; label: string }[] = [
   { id: 'none', label: '안 마심' },
@@ -42,9 +42,9 @@ export const DRINKS: { id: Drink; label: string }[] = [
   { id: 'often', label: '자주' },
 ];
 export const TONES: { id: Tone; label: string }[] = [
-  { id: 'polite', label: '🎩 정중' },
-  { id: 'witty', label: '🏹 재치' },
-  { id: 'direct', label: '⚡ 직설' },
+  { id: 'polite', label: '정중하게' },
+  { id: 'witty', label: '재치 있게' },
+  { id: 'direct', label: '단도직입' },
 ];
 export const DAY_LABEL: Record<Day, string> = {
   mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일',

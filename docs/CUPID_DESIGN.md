@@ -40,7 +40,7 @@ discovered ─HELLO→ screening ─SCREEN_PASS→ exploring ─FIT_OK→ schedu
 
 ### 2-2. 화면 흐름
 
-`onboarding → briefing → dispatching → watching → results ⇄ proposal`
+`landing → onboarding → briefing → dispatching → watching → results ⇄ proposal`
 로딩과 에러는 플래그가 아니라 상태다 (`dispatching`, 실패 시 `FAILED → briefing`).
 
 ## 3. 원칙 2 — 오픈 소스 비교 후 시작
@@ -56,19 +56,17 @@ GitHub 검색으로 비교했다. (이 세션은 다른 저장소의 코드를 �
 
 **핵심 설계 결정: "결정은 코드, 말은 LLM".** 통과 여부·점수·시간·장소는 `engine.ts`의 결정적 코드가 정한다. Claude(`voice.ts`)는 대사 문장만 다듬고, 줄 수가 다르면 버린다. API 키가 없어도 앱은 똑같이 동작한다.
 
-### UI 레퍼런스 — OpenGlass UI를 그대로 사용
+### UI — 당근 Seed Design
 
-화면은 직접 만든 CSS 대신 [`moekoelueker/open-glass-ui`](https://github.com/moekoelueker/open-glass-ui) (npm `open-glass-ui@0.5.1`, MIT)의 컴포넌트를 쓴다: `Glass`, `Card`, `Button`, `ToggleButton`, `SegmentedControl`, `TextField`, `NumberField`, `Select`, `Badge`, `Progress`, `Alert`, `Accordion`, `Spinner`.
+화면의 버튼·칩·입력칸·배지·알림은 당근의 [Seed Design](https://github.com/daangn/seed-design) (`@seed-design/react`, `@seed-design/css` 3.3.0, Apache-2.0) 컴포넌트다: `ActionButton`, `Chip.Toggle`, `Chip.RadioRoot/RadioItem`, `TextField`, `Badge`, `Callout`. 색·모서리·선은 전부 Seed 토큰(`--seed-color-*`, `--seed-radius-*`)을 쓴다. 색은 회색 단계와 브랜드색(캐럿) 하나, 글꼴은 Pretendard.
 
-| 후보 | 결과 |
-|---|---|
-| `rdev/liquid-glass-react` ★6.7k | React 19 필요 — 이 프로젝트는 React 18 |
-| `CruxGarden/plasma-ui` ★335, `iyinchao/liquid-glass-studio` ★830 | WebGL 셰이더 기반, 폼 컴포넌트가 거의 없음 |
-| `leefanv/liqui-design`, `itsjavi/glasscn-ui` 등 shadcn 계열 | Tailwind 필요 — 이 프로젝트엔 없음 |
-| **`moekoelueker/open-glass-ui`** ★29 | **선택.** 의존성 0, React 18, CSS 우선, 컴포넌트 40개, 접근성(투명도·모션 줄이기) 대응. 별은 적다. |
+- **배경:** Three.js로 그린 3D 점 그물(`Scene.tsx`). 주황 점 두 개가 "나"와 "상대"이고, 진행할수록 가까워지며 점선으로 이어진다. 읽는 화면에서는 숨기고, 에이전트가 대화 중일 때와 확정 순간에만 나타난다.
+- **스크롤 효과:** 첫 화면(`Landing.tsx`)은 GSAP ScrollTrigger — 제목 등장, 숫자 시차 이동, 대화가 한 줄씩 또렷해짐, 도장 찍힘, 가로로 흐르는 문장. 스크롤 진행도가 3D 카메라도 움직인다(`stage.ts`).
+- **배치:** 카드 나열 대신 가는 선으로 나눈 질문지·장부·대본 형태. PC는 왼쪽 고정 제목 + 오른쪽 내용 2단, 폰은 1단.
+- 움직임 줄이기 설정이면 스크롤·등장 효과를 끄고 3D는 정지 화면으로 그린다.
+- 이전에 시도했다가 뺀 것: 직접 만든 글래스 CSS, OpenGlass UI(React 18에 바로 붙었지만 색·글꼴이 맞지 않았다).
 
-직접 남긴 CSS(`cupid.css`)는 배경, 배치, 그리고 라이브러리에 없는 대화 말풍선·시간표뿐이다.
-Saju의 전역 `input/select/label` 규칙이 라이브러리 입력칸을 덮어써서, `globals.css`의 해당 선택자 4개에 `:where(:not(.cq *))`를 붙였다 (Saju 화면의 스타일과 우선순위는 그대로).
+Saju 전역 스타일과의 충돌은 세 군데서 막았다: `globals.css`의 `input/select/label` 선택자 4개에 `:where(:not(.cq *))`, 구름 장식은 `body:has(.cq)`에서 끔, 큐피트 쪽 버튼 초기화는 우선순위 0(`:where`)으로.
 
 ## 4. 원칙 3 — 오류 분류 (빈도 × 심각도, 임계값 5)
 
@@ -111,7 +109,7 @@ src/lib/cupid/
   voice.ts      Claude로 대사 다듬기 (선택)
   personas.ts   데모 후보 8명
 src/app/api/cupid/match/route.ts   POST {profile} → {courtships, voiced}
-src/app/cupid/                     화면 (page.tsx) + OpenGlass UI 설정 (CupidRoot.tsx)
+src/app/cupid/                     page.tsx(앱 화면) · Landing.tsx(첫 화면, GSAP) · Scene.tsx(Three.js) · stage.ts · cupid.css
 scripts/verify-cupid.ts            상태 머신·엔진 자체 점검
 ```
 

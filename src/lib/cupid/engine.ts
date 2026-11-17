@@ -88,7 +88,7 @@ export function discover(me: Profile, now: Date, pool: Persona[] = PERSONAS): Pe
 
 const HELLO: Record<Profile['tone'], (me: string, them: string) => string> = {
   polite: (me, them) => `안녕하세요, ${me}님의 에이전트입니다. ${them}님 프로필을 보고 인사드려요.`,
-  witty: (me, them) => `똑똑, ${me}님 담당 큐피트예요 🏹 ${them}님 프로필이 눈에 띄어서 날아왔어요.`,
+  witty: (me, them) => `똑똑, ${me}님 담당 큐피트예요. ${them}님 프로필이 눈에 띄어서 날아왔어요.`,
   direct: (me, them) => `${me}님의 에이전트입니다. ${them}님과 잘 맞을지 바로 확인해보고 싶어요.`,
 };
 
@@ -121,7 +121,7 @@ export function runCourtship(me: Profile, them: Persona, now: Date): Courtship {
     say('theirs', 'bow_out', '죄송해요, 저희 쪽 조건과 맞지 않아서 여기까지 할게요. 좋은 분 만나시길 바라요.', 'SCREEN_FAIL');
     return done({ closedReason: '상대의 비공개 조건과 맞지 않음 (내용은 상대만 알아요)' });
   }
-  say('theirs', 'screen', '양쪽 모두 통과예요 ✅ 이제 취향 이야기를 해볼까요?', 'SCREEN_PASS');
+  say('theirs', 'screen', '양쪽 모두 통과예요. 이제 취향 이야기를 해볼까요?', 'SCREEN_PASS');
 
   // 3) 케미 탐색
   const { score, breakdown } = scoreFit(me, them);
