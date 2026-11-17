@@ -1,0 +1,69 @@
+// 데모 후보 풀. 실제 서비스에서는 다른 사용자의 에이전트가 이 자리에 온다.
+import type { Persona } from './types';
+
+export const PERSONAS: Persona[] = [
+  {
+    id: 'seoyeon', name: '서연', emoji: '🦊', job: 'UX 디자이너',
+    bio: '주말엔 전시 보고 필름 카메라 들고 걷는 걸 좋아해요.',
+    birth: { year: 1996, month: 3, day: 14 }, gender: 'female', seeking: ['male'], ageRange: [27, 36],
+    city: '서울', interests: ['전시', '커피', '사진', '여행'], values: ['성장', '유머', '배려'],
+    smoker: false, drink: 'social', likesPets: true, dealbreakers: ['smoker'],
+    dateStyles: ['coffee', 'culture'], slots: ['sat-afternoon', 'sun-afternoon', 'wed-evening'], tone: 'witty',
+  },
+  {
+    id: 'jimin', name: '지민', emoji: '🐰', job: '간호사',
+    bio: '강아지 산책이 하루의 낙. 같이 요리해 먹는 저녁을 꿈꿔요.',
+    birth: { year: 1994, month: 8, day: 2 }, gender: 'female', seeking: ['male'], ageRange: [28, 38],
+    city: '서울', interests: ['러닝', '요리', '반려동물', '영화'], values: ['가족', '배려', '안정'],
+    smoker: false, drink: 'none', likesPets: true, dealbreakers: ['no_pets', 'heavy_drinker'],
+    dateStyles: ['walk', 'meal'], slots: ['tue-evening', 'thu-evening', 'sun-lunch'], tone: 'polite',
+  },
+  {
+    id: 'haeun', name: '하은', emoji: '🐬', job: '마케터',
+    bio: '바다 근처에 살아요. 즉흥 여행과 맛집 지도가 취미.',
+    birth: { year: 1998, month: 11, day: 23 }, gender: 'female', seeking: ['male'], ageRange: [26, 34],
+    city: '부산', interests: ['여행', '맛집 탐방', '음악·공연', '사진'], values: ['모험', '유머', '솔직함'],
+    smoker: false, drink: 'social', likesPets: true, dealbreakers: ['other_city'],
+    dateStyles: ['meal', 'activity'], slots: ['fri-evening', 'sat-evening'], tone: 'witty',
+  },
+  {
+    id: 'yuna', name: '유나', emoji: '🦉', job: '백엔드 개발자',
+    bio: '조용한 카페에서 책 읽다가 게임 얘기로 밤새는 타입.',
+    birth: { year: 1993, month: 1, day: 30 }, gender: 'female', seeking: ['female', 'male', 'other'], ageRange: [28, 40],
+    city: '서울', interests: ['게임', '독서', '커피', '영화'], values: ['독립성', '솔직함', '성장'],
+    smoker: false, drink: 'none', likesPets: false, dealbreakers: ['smoker'],
+    dateStyles: ['coffee', 'culture'], slots: ['mon-evening', 'sat-lunch'], tone: 'direct',
+  },
+  {
+    id: 'doyun', name: '도윤', emoji: '🐻', job: '프로덕트 매니저',
+    bio: '아침 러닝 후 마시는 커피를 제일 좋아해요. 다음 여행지 고르는 중.',
+    birth: { year: 1993, month: 6, day: 9 }, gender: 'male', seeking: ['female'], ageRange: [26, 34],
+    city: '서울', interests: ['러닝', '커피', '여행', '독서'], values: ['성장', '배려', '유머'],
+    smoker: false, drink: 'social', likesPets: true, dealbreakers: ['smoker'],
+    dateStyles: ['coffee', 'walk'], slots: ['sun-lunch', 'sat-afternoon', 'wed-evening'], tone: 'polite',
+  },
+  {
+    id: 'junho', name: '준호', emoji: '🦁', job: '셰프',
+    bio: '주말엔 주방에 있어요. 평일 저녁에 맛있는 걸 해드릴게요.',
+    birth: { year: 1991, month: 12, day: 1 }, gender: 'male', seeking: ['female'], ageRange: [27, 36],
+    city: '서울', interests: ['요리', '맛집 탐방', '음악·공연', '반려동물'], values: ['가족', '솔직함', '안정'],
+    smoker: false, drink: 'often', likesPets: true, dealbreakers: [],
+    dateStyles: ['meal', 'activity'], slots: ['mon-evening', 'tue-lunch', 'wed-evening'], tone: 'direct',
+  },
+  {
+    id: 'minjae', name: '민재', emoji: '🐺', job: '영상 PD',
+    bio: '영화 한 편 보고 세 시간 떠드는 걸 좋아합니다.',
+    birth: { year: 1997, month: 4, day: 18 }, gender: 'male', seeking: ['female'], ageRange: [24, 32],
+    city: '부산', interests: ['영화', '사진', '여행', '게임'], values: ['모험', '유머', '독립성'],
+    smoker: true, drink: 'social', likesPets: true, dealbreakers: [],
+    dateStyles: ['culture', 'activity'], slots: ['fri-evening', 'sat-evening', 'sun-afternoon'], tone: 'witty',
+  },
+  {
+    id: 'siwoo', name: '시우', emoji: '🦌', job: '수의사',
+    bio: '고양이 두 마리 집사. 산에서 내려와 전시 보는 주말이 좋아요.',
+    birth: { year: 1995, month: 9, day: 27 }, gender: 'male', seeking: ['female', 'male', 'other'], ageRange: [26, 36],
+    city: '서울', interests: ['반려동물', '등산', '독서', '전시'], values: ['배려', '안정', '성장'],
+    smoker: false, drink: 'social', likesPets: true, dealbreakers: ['no_pets'],
+    dateStyles: ['walk', 'culture'], slots: ['sat-lunch', 'sun-afternoon', 'thu-evening'], tone: 'polite',
+  },
+];

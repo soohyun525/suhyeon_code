@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:saju": "tsx scripts/verify-saju.ts"
+    "test:saju": "tsx scripts/verify-saju.ts",
+    "test:cupid": "tsx scripts/verify-cupid.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",

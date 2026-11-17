@@ -114,3 +114,13 @@ robots.txt + sitemap + favicon + OG tags, Vercel Analytics (zero-config on Verce
   case (births in the 23:00–24:00 window) uses the calendar-date day pillar.
 - Saju is offered for cultural insight and self-reflection — not as a prediction
   of fixed fate.
+
+## 큐피트 (`/cupid`) — 에이전트가 잡아주는 첫 데이트
+
+내 AI 에이전트가 상대의 에이전트와 대화해서 잘 맞는 사람을 찾고 첫 데이트 시간·장소를 잡아오는 데모 앱.
+Saju 앱과 같은 프로젝트 안에서 `/cupid` 경로로 동작한다. 설계는 [docs/CUPID_DESIGN.md](docs/CUPID_DESIGN.md).
+
+```bash
+npm run dev          # http://localhost:3000/cupid
+npm run test:cupid   # 상태 머신·협상 엔진 자체 점검
+```
