@@ -150,7 +150,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       <section className="cq-final">
         <div className="cq-page">
           <h2>이제, 보내볼까요?</h2>
-          <ActionButton variant="neutralSolid" size="large" onClick={onStart}>내 에이전트 보내기</ActionButton>
+          <ActionButton variant="neutralWeak" size="large" onClick={onStart}>내 에이전트 보내기</ActionButton>
           <p>데모 버전입니다. 상대는 가상 인물이고, 실제 예약은 하지 않습니다.</p>
         </div>
       </section>

@@ -3,9 +3,9 @@
 export function LogoMark({ size = 22 }: { size?: number }) {
   return (
     <svg width={size * 1.5} height={size} viewBox="0 0 36 24" fill="none" aria-hidden>
-      <path d="M6 17 C 12 3, 24 3, 30 17" stroke="var(--seed-color-fg-brand)" strokeWidth="2.4" strokeLinecap="round" />
-      <circle cx="6" cy="17" r="4.2" fill="var(--seed-color-fg-neutral)" />
-      <circle cx="30" cy="17" r="4.2" fill="var(--seed-color-fg-brand)" />
+      <path d="M6 17 C 12 3, 24 3, 30 17" stroke="var(--cq-rose-400)" strokeWidth="2.4" strokeLinecap="round" />
+      <circle cx="6" cy="17" r="4.2" fill="var(--cq-rose-800)" />
+      <circle cx="30" cy="17" r="4.2" fill="var(--cq-rose-500)" />
     </svg>
   );
 }

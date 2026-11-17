@@ -1,7 +1,7 @@
 /* 큐피트 — 당근 Seed Design 토큰과 컴포넌트 위에 올린 배치 스타일.
    색은 Seed의 회색 단계 + 브랜드색(로즈 레터, tokens.css) 하나. 버튼·칩·입력칸·배지는 Seed 컴포넌트가 그린다. */
 .cq {
-  --paper: var(--seed-color-bg-layer-default);
+  --paper: #fff;
   --ink: var(--seed-color-fg-neutral);
   --ink-2: var(--seed-color-fg-neutral-muted);
   --ink-3: var(--seed-color-fg-placeholder);
@@ -14,7 +14,7 @@
   isolation: isolate; /* 3D 캔버스(z-index:-1)를 종이 배경 위, 모든 글자 아래에 둔다 */
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--paper);
+  background: #fffafb;
   color: var(--ink);
   font-family: var(--cq-font);
   font-size: var(--cq-type-body);
@@ -27,11 +27,28 @@
 @media (min-width: 900px) { .cq { --gut: 48px; } }
 
 .cq :is(h1, h2, h3, p, ul, ol, dl, dd) { margin: 0; padding: 0; }
-.cq :is(h1, h2, h3) { font-family: var(--display); font-weight: 800; letter-spacing: -0.03em; line-height: 1.16; }
+.cq :is(h1, h2, h3) { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; line-height: 1.18; }
 .cq :is(ul, ol) { list-style: none; }
 :where(.cq button) { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
-.cq em { font-style: normal; color: var(--brand); }
+.cq em { font-style: normal; background: var(--cq-grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .cq :focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+
+/* 은은한 분홍·복숭아 빛 번짐 배경 (화면에 고정) */
+.cq::before {
+  content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(55% 45% at 88% 4%, #ffdce7 0%, transparent 70%),
+    radial-gradient(45% 40% at 2% 34%, #ffe9e1 0%, transparent 70%),
+    radial-gradient(60% 45% at 62% 100%, #ffe3ec 0%, transparent 72%);
+}
+
+/* Seed 컴포넌트를 큐피트답게: 둥글게, 분홍 그라데이션, 진한 남색 대신 연분홍 선택 */
+.cq .seed-action-button { border-radius: 999px; }
+.cq .seed-action-button--variant_brandSolid { background: var(--cq-grad-fill); box-shadow: 0 10px 26px rgba(255, 127, 166, 0.32); transition: filter var(--cq-fast), box-shadow var(--cq-base); }
+.cq .seed-action-button--variant_brandSolid:is(:hover, :active) { filter: saturate(1.15) brightness(0.98); box-shadow: 0 12px 30px rgba(255, 127, 166, 0.42); }
+.cq .seed-chip__root--variant_outlineStrong:is(:checked, [data-checked]) { background: var(--cq-rose-200); border-color: var(--cq-rose-400); box-shadow: inset 0 0 0 1px var(--cq-rose-400); }
+.cq .seed-chip__label--variant_outlineStrong:is(:checked, [data-checked]) { color: var(--cq-rose-800); }
+.cq-final .seed-action-button { background: #fff; color: var(--cq-rose-800); box-shadow: 0 10px 26px rgba(196, 59, 107, 0.18); }
 
 /* Saju 화면의 구름 장식(body::before/after)은 여기서 끈다 */
 body:has(.cq)::before, body:has(.cq)::after { display: none; }
@@ -65,7 +82,7 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 
 /* ── 첫 화면 ───────────────────────────────────────────── */
 .cq-hero { min-height: calc(100svh - 64px); display: flex; flex-direction: column; justify-content: flex-end; gap: clamp(20px, 3.5vh, 36px); padding-bottom: clamp(56px, 9vh, 96px); }
-.cq-hero h1 { font-size: var(--cq-type-hero); font-weight: 800; line-height: 1.04; letter-spacing: -0.055em; }
+.cq-hero h1 { font-size: var(--cq-type-hero); font-weight: 700; line-height: 1.08; letter-spacing: -0.05em; }
 .cq-hero .line { display: block; overflow: hidden; padding-block: 0.06em; margin-block: -0.06em; }
 .cq-hero .line > span { display: block; }
 .cq-hero .base { display: flex; flex-wrap: wrap; gap: 24px 48px; align-items: flex-end; justify-content: space-between; }
@@ -73,7 +90,7 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 .cq-hero .scroll { position: absolute; left: var(--gut); bottom: 20px; font-size: 12px; color: var(--ink-3); letter-spacing: 0.08em; }
 
 .cq-step { display: grid; gap: 28px; padding-block: clamp(72px, 13vh, 150px); border-top: 1px solid var(--rule); }
-.cq-step .num { font-family: var(--display); font-weight: 500; font-size: clamp(96px, 20vw, 300px); line-height: 0.82; letter-spacing: -0.06em; color: transparent; -webkit-text-stroke: 1.5px var(--ink); will-change: transform; }
+.cq-step .num { font-family: var(--display); font-weight: 500; font-size: clamp(96px, 20vw, 300px); line-height: 0.82; letter-spacing: -0.06em; color: transparent; -webkit-text-stroke: 1.5px var(--cq-rose-400); will-change: transform; }
 .cq-step .body { display: grid; gap: 22px; align-content: start; }
 .cq-step h2 { font-size: var(--cq-type-display); }
 .cq-step .body > p { max-width: 30em; font-size: var(--cq-type-lead); color: var(--ink-2); }
@@ -83,11 +100,12 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 }
 .cq-demo-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .cq-demo-tags li { border: 1px solid var(--seed-color-stroke-neutral-muted); border-radius: 999px; padding: 8px 16px; font-size: 15px; font-weight: 500; }
-.cq-demo-tags li.picked { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.cq-demo-tags li.picked { background: var(--cq-rose-200); color: var(--cq-rose-800); border-color: var(--cq-rose-400); }
 
 .cq-tape { position: relative; z-index: 1; overflow: hidden; padding-block: clamp(40px, 8vh, 90px); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
 .cq-tape p { white-space: nowrap; font-family: var(--display); font-weight: 800; font-size: clamp(44px, 9vw, 132px); line-height: 1.15; letter-spacing: -0.05em; width: max-content; will-change: transform; }
-.cq-tape p:last-child { color: transparent; -webkit-text-stroke: 1.5px var(--ink); }
+.cq-tape p:first-child { background: var(--cq-grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cq-tape p:last-child { color: transparent; -webkit-text-stroke: 1.5px var(--cq-rose-300); }
 
 .cq-promises { padding-block: clamp(72px, 13vh, 150px); display: grid; gap: 40px; }
 .cq-promises h2 { font-size: var(--cq-type-display); }
@@ -102,7 +120,7 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
   .cq-promises li p { grid-column: 2; }
 }
 
-.cq-final { position: relative; z-index: 1; background: var(--seed-color-bg-brand-solid); color: #fff; padding-block: clamp(80px, 16vh, 180px); }
+.cq-final { position: relative; z-index: 1; background: linear-gradient(135deg, var(--cq-rose-200) 0%, var(--cq-rose-300) 45%, #ffd0c2 100%); color: var(--cq-rose-900); padding-block: clamp(80px, 16vh, 180px); }
 .cq-final .cq-page { display: grid; gap: 32px; justify-items: start; }
 .cq-final h2 { font-size: clamp(46px, 10.5vw, 150px); font-weight: 800; letter-spacing: -0.055em; }
 .cq-final p { font-size: 14px; opacity: 0.85; }
@@ -142,8 +160,9 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 .cq-grid > span { padding-bottom: 8px; }
 .cq-grid .rowh { text-align: left; padding: 0; }
 .cq .cq-slot { height: 44px; margin: 3px; border-radius: var(--seed-radius-r2); background: var(--seed-color-bg-neutral-weak); font-size: 15px; font-weight: 700; color: #fff; text-align: center; font-variant-numeric: tabular-nums; transition: background 0.15s; }
-.cq .cq-slot:hover { background: var(--seed-color-palette-gray-300); }
-.cq .cq-slot[aria-pressed='true'] { background: var(--seed-color-bg-brand-solid); }
+.cq .cq-slot:hover { background: var(--cq-rose-200); }
+.cq .cq-slot { color: var(--cq-rose-900); }
+.cq .cq-slot[aria-pressed='true'] { background: var(--cq-grad-fill); }
 
 .cq-submit { display: grid; gap: 18px; justify-items: start; padding-top: 32px; border-top: 1px solid var(--line); }
 .cq-submit > [role='alert'] { width: 100%; }
@@ -181,7 +200,7 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 .cq-script .mine b { color: var(--brand); }
 .cq-script span { font-size: var(--cq-type-quote); line-height: 1.5; letter-spacing: -0.01em; }
 @media (min-width: 620px) { .cq-script li { grid-template-columns: 132px minmax(0, 1fr); } .cq-script b { padding-top: 5px; } }
-.cq-live { height: 54vh; min-height: 300px; overflow-y: auto; scrollbar-width: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper); }
+.cq-live { height: 54vh; min-height: 300px; overflow-y: auto; scrollbar-width: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: rgba(255, 252, 253, 0.86); }
 .cq-live::-webkit-scrollbar { display: none; }
 .cq-live .cq-script li:first-child { border-top: 0; }
 .cq-live .cq-script li:last-child { animation: cq-in 0.45s ease-out; }
@@ -205,12 +224,12 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
   .cq-card .no { padding-top: 0; }
   .cq-card > [class*='seed-badge'] { margin-top: 0; }
   .cq-card > i { display: block; grid-area: go; transition: transform 0.25s; }
-  .cq .cq-card:hover { padding-inline: 14px; background: var(--seed-color-bg-neutral-weak); border-radius: var(--seed-radius-r3); }
+  .cq .cq-card:hover { padding-inline: 14px; background: rgba(255, 221, 232, 0.5); border-radius: var(--seed-radius-r3); }
   .cq-card:hover > i { transform: translateX(4px); color: var(--brand); }
 }
 /* 초대장 */
 .cq-main > .cq-invite { margin-top: 34px; }
-.cq-invite { position: relative; border: 1px solid var(--seed-color-stroke-neutral-muted); border-radius: var(--seed-radius-r5); background: var(--paper); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06); padding: clamp(20px, 3vw, 36px); display: grid; gap: 10px; }
+.cq-invite { position: relative; border: 1px solid var(--cq-rose-200); border-radius: var(--seed-radius-r6); background: var(--cq-grad-soft); box-shadow: var(--cq-glow); padding: clamp(20px, 3vw, 36px); display: grid; gap: 10px; }
 .cq-invite header, .cq-invite footer { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
 .cq-invite header { padding-bottom: 14px; border-bottom: 1px solid var(--rule); margin-bottom: 14px; }
 .cq-invite footer { padding-top: 14px; border-top: 1px solid var(--rule); margin-top: 14px; font-weight: 400; }
@@ -221,7 +240,7 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 .cq-invite li::before { content: '—'; position: absolute; left: 0; color: var(--ink-3); }
 .cq-invite li.tip { color: var(--brand); }
 .cq-invite li.tip::before { content: '→'; color: var(--brand); }
-.cq-stamp { position: absolute; right: clamp(14px, 3vw, 32px); top: clamp(-44px, -4vw, -30px); background: var(--paper); width: clamp(76px, 10vw, 112px); aspect-ratio: 1; border-radius: 50%; border: 3px solid var(--brand); color: var(--brand); display: grid; place-items: center; font-weight: 800; font-size: clamp(20px, 2.4vw, 28px); letter-spacing: -0.02em; transform: rotate(-11deg); box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4.5px var(--brand); }
+.cq-stamp { position: absolute; right: clamp(14px, 3vw, 32px); top: clamp(-44px, -4vw, -30px); background: var(--paper); width: clamp(76px, 10vw, 112px); aspect-ratio: 1; border-radius: 50%; border: 3px solid var(--cq-rose-500); color: var(--cq-rose-600); display: grid; place-items: center; font-weight: 800; font-size: clamp(20px, 2.4vw, 28px); letter-spacing: -0.02em; transform: rotate(-11deg); box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4.5px var(--cq-rose-400); }
 .cq-invite + .cq-submit { border-top: 0; padding-top: 22px; }
 .cq-main > .cq-submit + .cq-q, .cq-main > .cq-note + .cq-q { margin-top: 48px; }
 .cq-note { padding-block: 24px; font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: -0.03em; display: block; }
@@ -237,7 +256,7 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 .cq-bars span:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .cq-bars small { font-weight: 400; color: var(--ink-3); }
 .cq-bars i { display: block; height: 8px; border-radius: 99px; background: var(--seed-color-bg-neutral-weak); overflow: hidden; }
-.cq-bars i b { display: block; height: 100%; border-radius: 99px; background: var(--seed-color-bg-brand-solid); }
+.cq-bars i b { display: block; height: 100%; border-radius: 99px; background: var(--cq-grad-fill); }
 .cq details summary { cursor: pointer; font-size: 15px; font-weight: 500; text-decoration: underline; text-underline-offset: 5px; list-style: none; }
 .cq details summary::-webkit-details-marker { display: none; }
 .cq details[open] summary { margin-bottom: 12px; }
@@ -263,7 +282,7 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
   .cq-sys section { grid-template-columns: 5fr 7fr; gap: 48px; }
   .cq-sys .cols.two { grid-template-columns: 1fr 1fr; }
 }
-.cq-swatches { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); }
+.cq-swatches { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); }
 .cq-swatches div { aspect-ratio: 1 / 1.25; display: flex; flex-direction: column; justify-content: flex-end; padding: 6px; font-size: 10.5px; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; min-width: 0; overflow: hidden; }
 .cq-swatches div:first-child { border-radius: 12px 0 0 12px; }
 .cq-swatches div:last-child { border-radius: 0 12px 12px 0; }
@@ -284,5 +303,5 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 .cq-voice > div:first-child span:last-child { text-decoration: none; color: var(--ink-2); }
 .cq-brandmark { display: flex; flex-wrap: wrap; gap: 16px; }
 .cq-brandmark > div { flex: 1 1 200px; min-height: 150px; border-radius: var(--seed-radius-r5); display: grid; place-items: center; border: 1px solid var(--line); background: var(--paper); }
-.cq-brandmark > div.rose { background: var(--cq-rose-100); border-color: transparent; }
+.cq-brandmark > div.rose { background: var(--cq-grad-fill); border-color: transparent; }
 .cq-brandmark .cq-logo { font-size: 30px; gap: 10px; }

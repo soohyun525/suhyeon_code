@@ -6,9 +6,9 @@ import { useState } from 'react';
 import { ActionButton, Badge, Callout, Chip, TextField } from '@seed-design/react';
 import Logo, { LogoMark } from '../Logo';
 
-const ROSE: [step: number, hex: string, onDark: boolean][] = [
-  [100, '#fff0f4', false], [200, '#ffdde6', false], [300, '#ffbccd', false], [400, '#ff8fab', false], [500, '#f55a84', false],
-  [600, '#dc2660', true], [700, '#b81a4e', true], [800, '#8f143e', true], [900, '#5f0e2a', true],
+const ROSE: [step: number, hex: string][] = [
+  [50, '#fff8fa'], [100, '#ffeff4'], [200, '#ffdde8'], [300, '#ffc4d6'], [400, '#ffa3bf'],
+  [500, '#ff7fa6'], [600, '#ee5c8b'], [700, '#c43b6b'], [800, '#8e2a52'], [900, '#5c1d38'],
 ];
 const TYPE: [token: string, use: string, sample: string][] = [
   ['hero', '첫 화면 한 문장', '첫 데이트는'],
@@ -56,15 +56,28 @@ export default function SystemPage() {
           <h2><small>02</small>색</h2>
           <div className="cols">
             <div>
-              <h3>로즈 레터 — 브랜드색은 이것 하나</h3>
+              <h3>블러시 핑크 — 브랜드색은 이것 하나</h3>
               <div className="cq-swatches">
-                {ROSE.map(([step, hex, dark]) => (
-                  <div key={step} style={{ background: hex, color: dark ? '#fff' : '#5f0e2a' }}>{step}<code>{hex}</code></div>
+                {ROSE.map(([step, hex]) => (
+                  <div key={step} style={{ background: hex, color: step >= 700 ? '#fff' : '#5c1d38' }}>{step}<code>{hex}</code></div>
                 ))}
               </div>
             </div>
-            <p className="note">600이 기준색입니다. 흰 글자를 올려도, 흰 바탕 위 글자로 써도 명도 대비 4.7:1로 읽기 기준(4.5:1)을 넘습니다. 누를 수 있는 가장 중요한 것 하나, 내 에이전트의 말, 확정된 상태에만 씁니다. 나머지는 Seed의 회색 단계입니다.</p>
-            <div className="cq-swatches">
+            <p className="note">400이 기준색입니다. 연한 분홍은 면으로 쓰고, 그 위 글자는 흰색 대신 진한 900을 올립니다(6.7:1). 작은 강조 글자는 700(흰 바탕 5.0:1), 본문은 검정 대신 자두색입니다. 그라데이션은 분홍에서 복숭아로 가는 한 가족만 씁니다.</p>
+            <div>
+              <h3>그라데이션</h3>
+              <div className="cq-swatches" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                <div style={{ background: 'var(--cq-grad-fill)', color: '#5c1d38', aspectRatio: 'auto', minHeight: 84 }}>fill · 버튼, 선택, 막대</div>
+                <div style={{ background: 'var(--cq-grad-text)', color: '#fff', aspectRatio: 'auto', minHeight: 84 }}>text · 큰 강조 글자</div>
+                <div style={{ background: 'linear-gradient(135deg, #ffdde8, #ffc4d6 45%, #ffd0c2)', color: '#5c1d38', aspectRatio: 'auto', minHeight: 84 }}>stage · 넓은 바탕</div>
+              </div>
+            </div>
+            <div className="cq-swatches" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              {[['#3d2330', '본문 plum'], ['#765a66', '보조'], ['#b9a2ab', '흐림'], ['#fffafb', '바탕']].map(([hex, label], i) => (
+                <div key={hex} style={{ background: hex, color: i < 2 ? '#fff' : '#3d2330', aspectRatio: 'auto', minHeight: 84 }}>{label}<code>{hex}</code></div>
+              ))}
+            </div>
+            <div hidden>
               {['00', '100', '200', '300', '400', '500', '600', '800', '1000'].map((g, i) => (
                 <div key={g} style={{ background: `var(--seed-color-palette-gray-${g})`, color: i > 5 ? '#fff' : '#1a1c20' }}>gray {g}</div>
               ))}
@@ -94,7 +107,7 @@ export default function SystemPage() {
           <h2><small>04</small>컴포넌트</h2>
           <div className="cols two">
             <div>
-              <h3>버튼 — 한 화면에 로즈는 하나</h3>
+              <h3>버튼 — 분홍 그라데이션은 한 화면에 하나</h3>
               <div className="cq-demo-row">
                 <ActionButton variant="brandSolid" size="large">이 데이트 승인하기</ActionButton>
                 <ActionButton variant="neutralWeak" size="large">다른 시간으로</ActionButton>

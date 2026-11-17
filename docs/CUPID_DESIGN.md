@@ -58,7 +58,7 @@ GitHub 검색으로 비교했다. (이 세션은 다른 저장소의 코드를 �
 
 ### UI — 당근 Seed Design
 
-화면의 버튼·칩·입력칸·배지·알림은 당근의 [Seed Design](https://github.com/daangn/seed-design) (`@seed-design/react`, `@seed-design/css` 3.3.0, Apache-2.0) 컴포넌트다: `ActionButton`, `Chip.Toggle`, `Chip.RadioRoot/RadioItem`, `TextField`, `Badge`, `Callout`. 색·모서리·선은 전부 Seed 토큰(`--seed-color-*`, `--seed-radius-*`)을 쓴다. 색은 회색 단계와 브랜드색 하나(로즈 레터 `#DC2660` — Seed의 브랜드 토큰을 `tokens.css`에서 다시 선언), 글꼴은 Pretendard. 브랜드 전략은 [CUPID_BRAND.md](CUPID_BRAND.md), 살아 있는 디자인 시스템은 `/cupid/system`.
+화면의 버튼·칩·입력칸·배지·알림은 당근의 [Seed Design](https://github.com/daangn/seed-design) (`@seed-design/react`, `@seed-design/css` 3.3.0, Apache-2.0) 컴포넌트다: `ActionButton`, `Chip.Toggle`, `Chip.RadioRoot/RadioItem`, `TextField`, `Badge`, `Callout`. 색·모서리·선은 전부 Seed 토큰(`--seed-color-*`, `--seed-radius-*`)을 쓴다. 색은 회색 단계와 브랜드색 하나(블러시 핑크 `#FFA3BF` — Seed의 브랜드 토큰을 `tokens.css`에서 다시 선언, 분홍→복숭아 그라데이션 사용), 글꼴은 Pretendard. 브랜드 전략은 [CUPID_BRAND.md](CUPID_BRAND.md), 살아 있는 디자인 시스템은 `/cupid/system`.
 
 - **배경:** Three.js로 그린 3D 점 그물(`Scene.tsx`). 로즈색 점 두 개가 "나"와 "상대"이고, 진행할수록 가까워지며 점선으로 이어진다. 읽는 화면에서는 숨기고, 에이전트가 대화 중일 때와 확정 순간에만 나타난다.
 - **스크롤 효과:** 첫 화면(`Landing.tsx`)은 GSAP ScrollTrigger — 제목 등장, 숫자 시차 이동, 대화가 한 줄씩 또렷해짐, 도장 찍힘, 가로로 흐르는 문장. 스크롤 진행도가 3D 카메라도 움직인다(`stage.ts`).

@@ -1,30 +1,48 @@
 /* 큐피트 디자인 시스템 토큰 (초안 v0.1)
    기반: 당근 Seed Design. 회색·간격·모서리는 Seed 것을 그대로 쓰고,
-   브랜드색만 "로즈 레터"로 바꾼다. Seed의 의미 토큰을 .cq 안에서 다시 선언하므로
+   브랜드색을 연한 "블러시 핑크"로 바꾸고 글자색도 검정 대신 자두색으로 누그러뜨린다. Seed의 의미 토큰을 .cq 안에서 다시 선언하므로
    ActionButton, Badge 같은 Seed 컴포넌트가 자동으로 이 색을 따른다.
    선택자를 겹쳐 쓴 이유: Seed가 같은 요소에 `:root [data-seed-color-mode]`로 토큰을 선언하므로 그보다 강해야 한다. */
 .cq.cq[data-seed-color-mode] {
-  /* ── 브랜드색: 로즈 레터 ─────────────────────────── */
-  --cq-rose-100: #fff0f4;
-  --cq-rose-200: #ffdde6;
-  --cq-rose-300: #ffbccd;
-  --cq-rose-400: #ff8fab;
-  --cq-rose-500: #f55a84;
-  --cq-rose-600: #dc2660; /* 기준색. 흰 글자와 4.7:1, 흰 바탕 위 글자로도 4.7:1 */
-  --cq-rose-700: #b81a4e;
-  --cq-rose-800: #8f143e;
-  --cq-rose-900: #5f0e2a;
+  /* ── 브랜드색: 블러시 핑크 ───────────────────────── */
+  --cq-rose-50: #fff8fa;
+  --cq-rose-100: #ffeff4;
+  --cq-rose-200: #ffdde8;
+  --cq-rose-300: #ffc4d6;
+  --cq-rose-400: #ffa3bf; /* 기준색 — 면(버튼·선택·막대)에 쓴다 */
+  --cq-rose-500: #ff7fa6;
+  --cq-rose-600: #ee5c8b;
+  --cq-rose-700: #c43b6b; /* 작은 강조 글자 (흰 바탕 5.0:1) */
+  --cq-rose-800: #8e2a52;
+  --cq-rose-900: #5c1d38; /* 분홍 면 위의 글자 (기준색 위 6.7:1) */
+  --cq-peach: #ffb9a8;
+  --cq-plum: #3d2330; /* 본문 글자 — 검정 대신 */
 
-  /* Seed 의미 토큰 → 로즈 */
-  --seed-color-bg-brand-solid: var(--cq-rose-600);
-  --seed-color-bg-brand-solid-pressed: var(--cq-rose-700);
+  /* 그라데이션은 분홍→복숭아 한 가족만 */
+  --cq-grad-fill: linear-gradient(120deg, var(--cq-rose-300) 0%, var(--cq-rose-400) 55%, var(--cq-peach) 100%);
+  --cq-grad-text: linear-gradient(100deg, var(--cq-rose-600) 0%, #ff8f8a 100%);
+  --cq-grad-soft: linear-gradient(160deg, #fff 0%, var(--cq-rose-50) 100%);
+  --cq-glow: 0 18px 44px rgba(255, 127, 166, 0.22);
+
+  /* Seed 의미 토큰 → 큐피트 */
+  --seed-color-bg-brand-solid: var(--cq-rose-400);
+  --seed-color-bg-brand-solid-pressed: var(--cq-rose-500);
+  --seed-color-fg-on-brand-solid: var(--cq-rose-900);
   --seed-color-bg-brand-weak: var(--cq-rose-100);
   --seed-color-bg-brand-weak-pressed: var(--cq-rose-200);
-  --seed-color-fg-brand: var(--cq-rose-600);
-  --seed-color-fg-brand-contrast: var(--cq-rose-700);
-  --seed-color-stroke-brand-solid: var(--cq-rose-700);
+  --seed-color-fg-brand: var(--cq-rose-700);
+  --seed-color-fg-brand-contrast: var(--cq-rose-800);
+  --seed-color-stroke-brand-solid: var(--cq-rose-500);
   --seed-color-stroke-brand-weak: var(--cq-rose-300);
   --seed-color-palette-carrot-200: var(--cq-rose-200);
+  --seed-color-fg-neutral: var(--cq-plum);
+  --seed-color-fg-neutral-muted: #765a66;
+  --seed-color-fg-neutral-subtle: #8f7480;
+  --seed-color-fg-placeholder: #b9a2ab;
+  --seed-color-bg-neutral-weak: var(--cq-rose-100);
+  --seed-color-bg-neutral-weak-pressed: var(--cq-rose-200);
+  --seed-color-stroke-neutral-weak: rgba(142, 42, 82, 0.13);
+  --seed-color-stroke-neutral-muted: rgba(142, 42, 82, 0.2);
 
   /* ── 글자 ────────────────────────────────────────── */
   --cq-font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;

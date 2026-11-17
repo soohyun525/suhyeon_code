@@ -7,9 +7,9 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { stage } from './stage';
 
-const INK = new THREE.Color('#1a1c20');
-const BRAND = new THREE.Color('#dc2660');
-const PAPER = new THREE.Color('#ffffff');
+const INK = new THREE.Color('#c58fa3');
+const BRAND = new THREE.Color('#ff7fa6');
+const PAPER = new THREE.Color('#fff3f6');
 
 const POINT_VERT = `
   attribute float aSize;
@@ -44,9 +44,9 @@ export default function Scene() {
     const el = host.current!;
     let renderer: THREE.WebGLRenderer;
     try {
-      // 불투명 캔버스: 종이색으로 직접 칠한다 (투명 캔버스는 글자와 겹칠 때 합성이 어긋났다)
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-      renderer.setClearColor(PAPER, 1);
+      // 투명 캔버스: 뒤의 분홍 빛 번짐 배경이 비친다
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setClearColor(PAPER, 0);
     } catch {
       return; // WebGL이 없으면 종이 배경만 보인다
     }
@@ -81,7 +81,7 @@ export default function Scene() {
         vertexShader: POINT_VERT, fragmentShader: POINT_FRAG, transparent: true, depthWrite: false,
         uniforms: { uColor: { value: color }, uOpacity: { value: opacity }, uScale: { value: 1 }, uMax: { value: 1 } },
       });
-    const inkMat = pointMat(INK, 0.62);
+    const inkMat = pointMat(INK, 0.7);
     cloud.add(new THREE.Points(pGeo, inkMat));
 
     // 가까운 점끼리 잇는 가는 선
@@ -99,7 +99,7 @@ export default function Scene() {
     }
     const lGeo = new THREE.BufferGeometry();
     lGeo.setAttribute('position', new THREE.Float32BufferAttribute(seg, 3));
-    const lMat = new THREE.LineBasicMaterial({ color: INK, transparent: true, opacity: 0.1 });
+    const lMat = new THREE.LineBasicMaterial({ color: INK, transparent: true, opacity: 0.2 });
     cloud.add(new THREE.LineSegments(lGeo, lMat));
 
     // 나와 상대 — 브랜드색 점 두 개와 둘을 잇는 점선
@@ -108,6 +108,11 @@ export default function Scene() {
     const me = new THREE.Mesh(nodeGeo, nodeMat);
     const you = new THREE.Mesh(nodeGeo, nodeMat);
     scene.add(me, you);
+    // 두 점 둘레의 부드러운 빛
+    const glowMat = new THREE.MeshBasicMaterial({ color: BRAND, transparent: true, opacity: 0.16, depthWrite: false, fog: false });
+    const meGlow = new THREE.Mesh(nodeGeo, glowMat);
+    const youGlow = new THREE.Mesh(nodeGeo, glowMat);
+    scene.add(meGlow, youGlow);
 
     const DOTS = 56;
     const linkPos = new Float32Array(DOTS * 3);
@@ -174,6 +179,10 @@ export default function Scene() {
       me.scale.setScalar(beat * stage.show + 0.0001);
       you.scale.setScalar(beat * stage.show + 0.0001);
       linkMat.uniforms.uOpacity.value = stage.show;
+      meGlow.position.copy(a);
+      youGlow.position.copy(b);
+      meGlow.scale.setScalar((2.6 + Math.sin(t * 1.6) * 0.3) * stage.show + 0.0001);
+      youGlow.scale.setScalar((2.6 + Math.cos(t * 1.6) * 0.3) * stage.show + 0.0001);
 
       // 점선: p 가 커질수록 나에게서 상대 쪽으로 그려진다
       mid.addVectors(a, b).multiplyScalar(0.5);
@@ -216,7 +225,7 @@ export default function Scene() {
       window.removeEventListener('pointermove', onMove);
       document.removeEventListener('visibilitychange', onVis);
       [pGeo, lGeo, nodeGeo, linkGeo, ring.geometry].forEach((g) => g.dispose());
-      [inkMat, lMat, nodeMat, linkMat, ringMat].forEach((m) => m.dispose());
+      [inkMat, lMat, nodeMat, glowMat, linkMat, ringMat].forEach((m) => m.dispose());
       renderer.dispose();
       renderer.domElement.remove();
     };
