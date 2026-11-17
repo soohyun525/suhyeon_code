@@ -1,0 +1,46 @@
+/* 큐피트 디자인 시스템 토큰 (초안 v0.1)
+   기반: 당근 Seed Design. 회색·간격·모서리는 Seed 것을 그대로 쓰고,
+   브랜드색만 "로즈 레터"로 바꾼다. Seed의 의미 토큰을 .cq 안에서 다시 선언하므로
+   ActionButton, Badge 같은 Seed 컴포넌트가 자동으로 이 색을 따른다.
+   선택자를 겹쳐 쓴 이유: Seed가 같은 요소에 `:root [data-seed-color-mode]`로 토큰을 선언하므로 그보다 강해야 한다. */
+.cq.cq[data-seed-color-mode] {
+  /* ── 브랜드색: 로즈 레터 ─────────────────────────── */
+  --cq-rose-100: #fff0f4;
+  --cq-rose-200: #ffdde6;
+  --cq-rose-300: #ffbccd;
+  --cq-rose-400: #ff8fab;
+  --cq-rose-500: #f55a84;
+  --cq-rose-600: #dc2660; /* 기준색. 흰 글자와 4.7:1, 흰 바탕 위 글자로도 4.7:1 */
+  --cq-rose-700: #b81a4e;
+  --cq-rose-800: #8f143e;
+  --cq-rose-900: #5f0e2a;
+
+  /* Seed 의미 토큰 → 로즈 */
+  --seed-color-bg-brand-solid: var(--cq-rose-600);
+  --seed-color-bg-brand-solid-pressed: var(--cq-rose-700);
+  --seed-color-bg-brand-weak: var(--cq-rose-100);
+  --seed-color-bg-brand-weak-pressed: var(--cq-rose-200);
+  --seed-color-fg-brand: var(--cq-rose-600);
+  --seed-color-fg-brand-contrast: var(--cq-rose-700);
+  --seed-color-stroke-brand-solid: var(--cq-rose-700);
+  --seed-color-stroke-brand-weak: var(--cq-rose-300);
+  --seed-color-palette-carrot-200: var(--cq-rose-200);
+
+  /* ── 글자 ────────────────────────────────────────── */
+  --cq-font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+  --cq-type-hero: clamp(50px, 12.4vw, 176px); /* 첫 화면 한 문장 */
+  --cq-type-display: clamp(34px, 5.4vw, 80px); /* 구역 제목 */
+  --cq-type-title: clamp(36px, 4.6vw, 68px); /* 화면 제목 */
+  --cq-type-date: clamp(30px, 4.4vw, 58px); /* 초대장의 날짜 */
+  --cq-type-heading: clamp(24px, 2.8vw, 40px);
+  --cq-type-quote: clamp(17px, 1.5vw, 20px); /* 에이전트 대사 */
+  --cq-type-lead: clamp(16px, 1.35vw, 19px);
+  --cq-type-body: 16px;
+  --cq-type-label: 13px;
+  --cq-type-caption: 12px;
+
+  /* ── 움직임 ──────────────────────────────────────── */
+  --cq-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cq-fast: 0.15s;
+  --cq-base: 0.25s;
+}

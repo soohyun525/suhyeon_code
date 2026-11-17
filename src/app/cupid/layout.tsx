@@ -7,6 +7,7 @@ import '@seed-design/css/recipes/text-input.css';
 import '@seed-design/css/recipes/badge.css';
 import '@seed-design/css/recipes/callout.css';
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+import './tokens.css';
 import './cupid.css';
 
 export const metadata: Metadata = {

@@ -16,6 +16,7 @@ import {
   type A2AMessage, type Courtship, type Profile, type SlotId,
 } from '@/lib/cupid/types';
 import Landing from './Landing';
+import Logo from './Logo';
 import { stage } from './stage';
 
 const Scene = dynamic(() => import('./Scene'), { ssr: false });
@@ -141,7 +142,7 @@ export default function CupidPage() {
     <>
       <Scene />
       <header className="cq-head cq-page">
-        <button className="cq-mark" onClick={() => send({ type: 'HOME' })} aria-label="큐피트 처음으로">큐피트<i /></button>
+        <button className="cq-mark" onClick={() => send({ type: 'HOME' })} aria-label="큐피트 처음으로"><Logo /></button>
         {ctx.screen !== 'landing' && (
           <ol className="cq-crumbs" aria-label="진행 순서">
             {CRUMBS.map((c, i) => (

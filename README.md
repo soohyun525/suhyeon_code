@@ -119,6 +119,7 @@ robots.txt + sitemap + favicon + OG tags, Vercel Analytics (zero-config on Verce
 
 내 AI 에이전트가 상대의 에이전트와 대화해서 잘 맞는 사람을 찾고 첫 데이트 시간·장소를 잡아오는 데모 앱.
 Saju 앱과 같은 프로젝트 안에서 `/cupid` 경로로 동작한다. 설계는 [docs/CUPID_DESIGN.md](docs/CUPID_DESIGN.md).
+브랜드·디자인 전략은 [docs/CUPID_BRAND.md](docs/CUPID_BRAND.md), 디자인 시스템 초안은 `/cupid/system`에서 볼 수 있다 (당근 Seed Design 기반).
 
 ```bash
 npm run dev          # http://localhost:3000/cupid

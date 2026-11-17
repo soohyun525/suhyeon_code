@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { stage } from './stage';
 
 const INK = new THREE.Color('#1a1c20');
-const BRAND = new THREE.Color('#ff6600');
+const BRAND = new THREE.Color('#dc2660');
 const PAPER = new THREE.Color('#ffffff');
 
 const POINT_VERT = `
