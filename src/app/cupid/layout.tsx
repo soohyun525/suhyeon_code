@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import './cupid.css';
+import CupidRoot from './CupidRoot';
 
 export const metadata: Metadata = {
   title: '큐피트 💘 내 에이전트가 잡아주는 첫 데이트',
@@ -7,12 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function CupidLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="cq" lang="ko">
-      <div className="cq-bg" aria-hidden>
-        <i /><i /><i />
-      </div>
-      {children}
-    </div>
-  );
+  return <CupidRoot>{children}</CupidRoot>;
 }

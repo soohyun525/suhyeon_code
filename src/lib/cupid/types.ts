@@ -42,9 +42,9 @@ export const DRINKS: { id: Drink; label: string }[] = [
   { id: 'often', label: '자주' },
 ];
 export const TONES: { id: Tone; label: string }[] = [
-  { id: 'polite', label: '🎩 정중하게' },
-  { id: 'witty', label: '🏹 재치있게' },
-  { id: 'direct', label: '⚡ 단도직입' },
+  { id: 'polite', label: '🎩 정중' },
+  { id: 'witty', label: '🏹 재치' },
+  { id: 'direct', label: '⚡ 직설' },
 ];
 export const DAY_LABEL: Record<Day, string> = {
   mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일',

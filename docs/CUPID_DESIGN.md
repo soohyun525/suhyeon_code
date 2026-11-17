@@ -56,6 +56,20 @@ GitHub 검색으로 비교했다. (이 세션은 다른 저장소의 코드를 �
 
 **핵심 설계 결정: "결정은 코드, 말은 LLM".** 통과 여부·점수·시간·장소는 `engine.ts`의 결정적 코드가 정한다. Claude(`voice.ts`)는 대사 문장만 다듬고, 줄 수가 다르면 버린다. API 키가 없어도 앱은 똑같이 동작한다.
 
+### UI 레퍼런스 — OpenGlass UI를 그대로 사용
+
+화면은 직접 만든 CSS 대신 [`moekoelueker/open-glass-ui`](https://github.com/moekoelueker/open-glass-ui) (npm `open-glass-ui@0.5.1`, MIT)의 컴포넌트를 쓴다: `Glass`, `Card`, `Button`, `ToggleButton`, `SegmentedControl`, `TextField`, `NumberField`, `Select`, `Badge`, `Progress`, `Alert`, `Accordion`, `Spinner`.
+
+| 후보 | 결과 |
+|---|---|
+| `rdev/liquid-glass-react` ★6.7k | React 19 필요 — 이 프로젝트는 React 18 |
+| `CruxGarden/plasma-ui` ★335, `iyinchao/liquid-glass-studio` ★830 | WebGL 셰이더 기반, 폼 컴포넌트가 거의 없음 |
+| `leefanv/liqui-design`, `itsjavi/glasscn-ui` 등 shadcn 계열 | Tailwind 필요 — 이 프로젝트엔 없음 |
+| **`moekoelueker/open-glass-ui`** ★29 | **선택.** 의존성 0, React 18, CSS 우선, 컴포넌트 40개, 접근성(투명도·모션 줄이기) 대응. 별은 적다. |
+
+직접 남긴 CSS(`cupid.css`)는 배경, 배치, 그리고 라이브러리에 없는 대화 말풍선·시간표뿐이다.
+Saju의 전역 `input/select/label` 규칙이 라이브러리 입력칸을 덮어써서, `globals.css`의 해당 선택자 4개에 `:where(:not(.cq *))`를 붙였다 (Saju 화면의 스타일과 우선순위는 그대로).
+
 ## 4. 원칙 3 — 오류 분류 (빈도 × 심각도, 임계값 5)
 
 | 오류 | 빈도 | 심각도 | 곱 | 처리 |
@@ -97,7 +111,7 @@ src/lib/cupid/
   voice.ts      Claude로 대사 다듬기 (선택)
   personas.ts   데모 후보 8명
 src/app/api/cupid/match/route.ts   POST {profile} → {courtships, voiced}
-src/app/cupid/                     글래스 UI (page.tsx, cupid.css)
+src/app/cupid/                     화면 (page.tsx) + OpenGlass UI 설정 (CupidRoot.tsx)
 scripts/verify-cupid.ts            상태 머신·엔진 자체 점검
 ```
 
