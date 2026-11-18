@@ -5,6 +5,8 @@ import { applyOwnerEvent } from '../src/lib/cupid/owner';
 import { runAll, slotToDate, discover, FIT_THRESHOLD } from '../src/lib/cupid/engine';
 import { parseProfile } from '../src/lib/cupid/validate';
 import { SAMPLE_PROFILE } from '../src/lib/cupid/sample';
+import { InstaError, parseHandle, readTaste } from '../src/lib/cupid/insta';
+import { INTERESTS, VALUES } from '../src/lib/cupid/types';
 
 // 1) 모든 전이의 도착지는 정의된 상태다
 for (const s of COURT_STATES) for (const to of Object.values(COURT_FLOW[s])) assert.ok(COURT_STATES.includes(to!));
@@ -79,5 +81,16 @@ assert.equal(applyOwnerEvent(by.doyun, 'MY_PASS').state, 'declined');
 assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, name: ' ' }));
 assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, slots: ['never-ever'] }));
 assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, birth: { year: 1995, month: 2, day: 30 } }));
+
+// 9) 인스타 읽기: 아이디 정리, 허용 목록 안의 결과, 같은 입력엔 같은 결과
+assert.equal(parseHandle(' @Haneul.Run '), 'haneul.run');
+assert.equal(parseHandle('https://www.instagram.com/haneul_run/?hl=ko'), 'haneul_run');
+for (const bad of ['', 'a b', '.abc', 'abc.', 'a..b', 'x'.repeat(31), '한글']) assert.throws(() => parseHandle(bad), InstaError);
+const taste = readTaste({ handle: 't', source: 'demo', bio: '', captions: ['한강 러닝 10k 완주 #도전', '러닝 후 라떼 ㅋㅋ #카페', '전시 다녀옴 #미술관', '러닝 기록 ㅋㅋ'] });
+assert.equal(taste.interests[0], '러닝');
+assert.ok(taste.interests.every((i) => INTERESTS.includes(i)) && taste.values.every((v) => VALUES.includes(v)));
+assert.ok(taste.dateStyles.includes('walk') && taste.tone === 'witty');
+assert.throws(() => readTaste({ handle: 't', source: 'demo', bio: '', captions: ['오늘 하루'] }), InstaError);
+assert.ok(!/무의식|상처|우울|진단|애착/.test(JSON.stringify(taste))); // 진단형 표현 금지
 
 console.log(`✓ cupid: 상태 머신·엔진 점검 통과 (후보 ${all.length}명: ${all.map((c) => `${c.card.name}=${c.state}`).join(', ')})`);

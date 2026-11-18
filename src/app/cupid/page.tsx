@@ -10,6 +10,7 @@ import gsap from 'gsap';
 import { applyOwnerEvent, type OwnerEvent } from '@/lib/cupid/owner';
 import { COURT_LABEL, COURT_STEPS, SCREEN_FLOW, canFire, type CourtState, type Screen } from '@/lib/cupid/machine';
 import { SAMPLE_PROFILE } from '@/lib/cupid/sample';
+import type { TasteRead } from '@/lib/cupid/insta';
 import { parseProfile } from '@/lib/cupid/validate';
 import {
   CITIES, DATE_STYLES, DAYS, DAY_LABEL, DEALBREAKERS, DRINKS, GENDERS, INTERESTS, PARTS, PART_LABEL, TONES, VALUES,
@@ -30,10 +31,10 @@ const EMPTY: Profile = {
 
 // 화면별 3D 여정 위치 (landing 은 스크롤이 0~0.6 을 직접 움직인다)
 const STAGE_P: Record<Exclude<Screen, 'landing'>, number> = {
-  onboarding: 0.66, briefing: 0.74, dispatching: 0.84, watching: 0.88, results: 0.92, proposal: 0.96,
+  connect: 0.62, reading: 0.64, persona: 0.65, onboarding: 0.66, briefing: 0.74, dispatching: 0.84, watching: 0.88, results: 0.92, proposal: 0.96,
 };
 const CRUMBS: { label: string; screens: Screen[] }[] = [
-  { label: '프로필', screens: ['onboarding'] },
+  { label: '프로필', screens: ['connect', 'reading', 'persona', 'onboarding'] },
   { label: '브리핑', screens: ['briefing'] },
   { label: '대화', screens: ['dispatching', 'watching'] },
   { label: '결과', screens: ['results', 'proposal'] },
@@ -46,10 +47,15 @@ interface Ctx {
   voiced: boolean;
   openId: string | null;
   error: string | null;
+  handle: string | null;
+  taste: TasteRead | null;
 }
 type Action =
   | { type: 'PROFILE_SAVED'; profile: Profile }
-  | { type: 'START' | 'HOME' | 'EDIT' | 'DISPATCH' | 'WATCHED' | 'BACK' }
+  | { type: 'START' | 'HOME' | 'EDIT' | 'DISPATCH' | 'WATCHED' | 'BACK' | 'SKIP' | 'CONTINUE' | 'RETRY' }
+  | { type: 'HANDLE_SENT'; handle: string }
+  | { type: 'READ_OK'; taste: TasteRead }
+  | { type: 'READ_FAILED'; error: string }
   | { type: 'LOADED'; courtships: Courtship[]; voiced: boolean }
   | { type: 'FAILED'; error: string }
   | { type: 'OPEN'; id: string }
@@ -67,14 +73,17 @@ function reducer(ctx: Ctx, a: Action): Ctx {
   const next: Ctx = { ...ctx, screen, error: null };
   if (a.type === 'PROFILE_SAVED') next.profile = a.profile;
   if (a.type === 'LOADED') Object.assign(next, { courtships: a.courtships, voiced: a.voiced });
-  if (a.type === 'FAILED') next.error = a.error;
+  if (a.type === 'FAILED' || a.type === 'READ_FAILED') next.error = a.error;
+  if (a.type === 'HANDLE_SENT') next.handle = a.handle;
+  if (a.type === 'READ_OK') next.taste = a.taste;
+  if (a.type === 'SKIP') next.taste = null;
   if (a.type === 'OPEN') next.openId = a.id;
   return next;
 }
 
 export default function CupidPage() {
   const [ctx, send] = useReducer(reducer, {
-    screen: 'landing', profile: null, courtships: [], voiced: false, openId: null, error: null,
+    screen: 'landing', profile: null, courtships: [], voiced: false, openId: null, error: null, handle: null, taste: null,
   });
   const [saved, setSaved] = useState<Profile | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -85,6 +94,22 @@ export default function CupidPage() {
       if (raw) setSaved(parseProfile(JSON.parse(raw)));
     } catch {}
   }, []);
+
+  // reading 상태에 들어오면 인스타그램을 읽는다.
+  useEffect(() => {
+    if (ctx.screen !== 'reading' || !ctx.handle) return;
+    let live = true;
+    fetch('/api/cupid/insta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: ctx.handle }) })
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error);
+        if (live) send({ type: 'READ_OK', taste: data.taste });
+      })
+      .catch((e) => live && send({ type: 'READ_FAILED', error: e?.message || '읽어오지 못했어요. 직접 입력으로 진행해주세요.' }));
+    return () => {
+      live = false;
+    };
+  }, [ctx.screen, ctx.handle]);
 
   // dispatching 상태에 들어오면 에이전트를 보낸다.
   useEffect(() => {
@@ -158,10 +183,31 @@ export default function CupidPage() {
         <Landing onStart={() => send({ type: 'START' })} />
       ) : (
         <main className="cq-page cq-app" ref={main}>
+          {ctx.screen === 'connect' && (
+            <Connect
+              initial={ctx.handle ?? ''}
+              error={ctx.error}
+              onSend={(handle) => send({ type: 'HANDLE_SENT', handle })}
+              onSkip={() => send({ type: 'SKIP' })}
+            />
+          )}
+          {ctx.screen === 'reading' && (
+            <section className="cq-wait" aria-live="polite">
+              <p className="cq-kicker">01 — 프로필</p>
+              <h1>@{ctx.handle}<br />읽는 중<span className="cq-dots3" aria-hidden><i>.</i><i>.</i><i>.</i></span></h1>
+              <p>공개 게시물의 글에서 취향을 찾고 있어요.</p>
+            </section>
+          )}
+          {ctx.screen === 'persona' && ctx.taste && (
+            <Persona taste={ctx.taste} onContinue={() => send({ type: 'CONTINUE' })} onRetry={() => send({ type: 'RETRY' })} />
+          )}
           {ctx.screen === 'onboarding' && (
             <Onboarding
-              key={saved ? 'saved' : 'empty'}
-              initial={ctx.profile ?? saved ?? EMPTY}
+              key={`${saved ? 'saved' : 'empty'}-${ctx.taste?.handle ?? ''}`}
+              prefilled={!ctx.profile && !!ctx.taste}
+              initial={ctx.profile ?? (ctx.taste
+                ? { ...(saved ?? EMPTY), interests: ctx.taste.interests, values: ctx.taste.values, dateStyles: ctx.taste.dateStyles, tone: ctx.taste.tone }
+                : saved ?? EMPTY)}
               onDone={(profile) => {
                 try {
                   localStorage.setItem(STORE_KEY, JSON.stringify(profile));
@@ -325,9 +371,91 @@ function Q({ n, title, hint, children }: { n: number; title: string; hint?: stri
   );
 }
 
+// ── 0. 인스타그램으로 시작 ───────────────────────────────────────
+
+function Connect({ initial, error, onSend, onSkip }: { initial: string; error: string | null; onSend: (handle: string) => void; onSkip: () => void }) {
+  const [handle, setHandle] = useState(initial);
+  return (
+    <Split
+      kicker="01 — 프로필"
+      title={<>인스타그램 아이디<br /><em>한 칸</em>이면 돼요</>}
+      lead="공개 게시물의 글을 읽고 취향을 먼저 채워둘게요. 고치는 건 그다음에 하면 됩니다."
+    >
+      <form onSubmit={(e) => { e.preventDefault(); if (handle.trim()) onSend(handle.trim().replace(/^@/, '')); }} noValidate>
+        <section className="cq-q" data-rise>
+          <div className="label"><h2>내 인스타그램</h2><p>본인 계정만 입력해 주세요.</p></div>
+          <div className="field">
+            <TextField.Root variant="underline" size="large" value={handle} onValueChange={setHandle}>
+              <TextField.PrefixText>@</TextField.PrefixText>
+              <TextField.Input id="cq-insta" aria-label="인스타그램 아이디" placeholder="아이디" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={60} />
+            </TextField.Root>
+          </div>
+        </section>
+        <section className="cq-q" data-rise>
+          <div className="label"><h2>읽는 범위</h2></div>
+          <ul className="cq-plain field">
+            <li>공개 게시물의 글과 해시태그만 읽어요. 사진 속 사람이나 위치는 보지 않아요.</li>
+            <li>읽은 글은 취향을 고르는 데만 쓰고 저장하지 않아요.</li>
+            <li>비공개 계정은 읽지 않아요. 그럴 땐 직접 고르면 됩니다.</li>
+          </ul>
+        </section>
+        <div className="cq-submit" data-rise>
+          {error && <Callout.Root tone="critical" role="alert"><Callout.Content><Callout.Description>{error}</Callout.Description></Callout.Content></Callout.Root>}
+          <div className="cq-links">
+            <Go type="submit" disabled={!handle.trim()}>내 취향 읽어보기</Go>
+            <Go type="button" variant="ghost" onClick={onSkip}>직접 입력할게요</Go>
+          </div>
+        </div>
+      </form>
+    </Split>
+  );
+}
+
+function Persona({ taste, onContinue, onRetry }: { taste: TasteRead; onContinue: () => void; onRetry: () => void }) {
+  const [shared, setShared] = useState(false);
+  const styleLabel = (id: string) => DATE_STYLES.find((d) => d.id === id)?.label ?? id;
+  const share = async () => {
+    const text = `큐피트가 읽은 나: ${taste.typeName}\n잘 맞는 사람: ${taste.matchLine}`;
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else await navigator.clipboard.writeText(text);
+      setShared(true);
+    } catch {}
+  };
+  return (
+    <Split
+      kicker={`01 — 프로필 · @${taste.handle}`}
+      title={<>당신은<br /><em>{taste.typeName}</em></>}
+      lead={taste.summary}
+      aside={<button className="cq-link" onClick={onRetry}>다른 아이디로 다시</button>}
+    >
+      <section className="cq-invite cq-read" data-rise>
+        <header><span>취향 읽기 · 게시물 {taste.postCount}개</span><span>{taste.source === 'demo' ? '예시 데이터' : '본인 확인 전'}</span></header>
+        <p className="cq-hint">이런 사람과 잘 맞아요</p>
+        <p className="when">{taste.matchLine}</p>
+        <dl>
+          <div><dt>관심사</dt><dd className="cq-demo-tags">{taste.interests.map((x) => <span key={x} className="picked">{x}</span>)}</dd></div>
+          {taste.values.length > 0 && <div><dt>아끼는 것</dt><dd className="cq-demo-tags">{taste.values.map((x) => <span key={x} className="picked">{x}</span>)}</dd></div>}
+          <div><dt>첫 데이트</dt><dd className="cq-demo-tags">{taste.dateStyles.map((x) => <span key={x} className="picked">{styleLabel(x)}</span>)}</dd></div>
+          <div><dt>읽은 근거</dt><dd>{taste.evidence.join(' · ')}</dd></div>
+        </dl>
+      </section>
+      {taste.source === 'demo' && (
+        <p className="cq-hint" data-rise>지금은 데모라서 실제 계정 대신 예시 게시물로 만든 결과예요.</p>
+      )}
+      <div className="cq-submit" data-rise>
+        <div className="cq-links">
+          <Go onClick={onContinue}>이대로 프로필 채우기</Go>
+          <Go variant="neutralWeak" onClick={share}>{shared ? '공유할 글을 복사했어요' : '결과 공유하기'}</Go>
+        </div>
+      </div>
+    </Split>
+  );
+}
+
 // ── 1. 프로필 입력 ───────────────────────────────────────────────
 
-function Onboarding({ initial, onDone }: { initial: Profile; onDone: (p: Profile) => void }) {
+function Onboarding({ initial, prefilled, onDone }: { initial: Profile; prefilled?: boolean; onDone: (p: Profile) => void }) {
   const [d, setD] = useState<Profile>(initial);
   const [error, setError] = useState<string | null>(null);
   const set = (patch: Partial<Profile>) => setD((p) => ({ ...p, ...patch }));
@@ -345,7 +473,9 @@ function Onboarding({ initial, onDone }: { initial: Profile; onDone: (p: Profile
     <Split
       kicker="01 — 프로필"
       title={<>에이전트에게<br />나를 알려주세요</>}
-      lead="여기 적은 내용으로 에이전트가 상대를 고르고 이야기합니다. 잠금 표시가 있는 항목은 상대에게 전달되지 않아요."
+      lead={prefilled
+        ? '인스타그램에서 읽은 취향을 미리 채워뒀어요. 맞지 않는 건 고치고, 나머지 칸만 채워주세요.'
+        : '여기 적은 내용으로 에이전트가 상대를 고르고 이야기합니다. 잠금 표시가 있는 항목은 상대에게 전달되지 않아요.'}
       aside={<button type="button" className="cq-link" onClick={() => { setD(SAMPLE_PROFILE); setError(null); }}>예시로 채워보기</button>}
     >
       <form onSubmit={submit} noValidate>

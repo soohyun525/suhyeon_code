@@ -96,10 +96,16 @@ export const COURT_LABEL: Record<CourtState, string> = {
 // ── 앱 화면 흐름 (두 번째 상태 머신) ───────────────────────────────
 // 로딩/에러를 boolean 플래그로 흩어놓지 않고 화면 상태 하나로 관리한다.
 
-export type Screen = 'landing' | 'onboarding' | 'briefing' | 'dispatching' | 'watching' | 'results' | 'proposal';
+export type Screen = 'landing' | 'connect' | 'reading' | 'persona' | 'onboarding' | 'briefing' | 'dispatching' | 'watching' | 'results' | 'proposal';
 export type ScreenEvent =
   | 'START'
   | 'HOME'
+  | 'HANDLE_SENT'
+  | 'SKIP'
+  | 'READ_OK'
+  | 'READ_FAILED'
+  | 'CONTINUE'
+  | 'RETRY'
   | 'PROFILE_SAVED'
   | 'EDIT'
   | 'DISPATCH'
@@ -110,7 +116,10 @@ export type ScreenEvent =
   | 'BACK';
 
 export const SCREEN_FLOW: Record<Screen, Partial<Record<ScreenEvent, Screen>>> = {
-  landing: { START: 'onboarding' },
+  landing: { START: 'connect' },
+  connect: { HANDLE_SENT: 'reading', SKIP: 'onboarding', HOME: 'landing' },
+  reading: { READ_OK: 'persona', READ_FAILED: 'connect' },
+  persona: { CONTINUE: 'onboarding', RETRY: 'connect' },
   onboarding: { PROFILE_SAVED: 'briefing', HOME: 'landing' },
   briefing: { EDIT: 'onboarding', DISPATCH: 'dispatching' },
   dispatching: { LOADED: 'watching', FAILED: 'briefing' },

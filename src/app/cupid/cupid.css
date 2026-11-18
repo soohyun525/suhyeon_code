@@ -266,6 +266,16 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
   .cq * { transition: none !important; }
 }
 
+/* 취향 읽기 결과 카드 */
+.cq-read .when { background: var(--cq-grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: var(--cq-type-heading); padding-bottom: 0.08em; }
+.cq-read dl { display: grid; margin-top: 14px; border-top: 1px solid var(--line); }
+.cq-read dl > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 12px; align-items: center; padding-block: 12px; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.cq-read dl > div:last-child { border-bottom: 0; padding-bottom: 0; color: var(--ink-2); }
+.cq-read dt { font-size: var(--cq-type-label); font-weight: 600; color: var(--ink-2); }
+.cq-demo-tags span { border: 1px solid var(--seed-color-stroke-neutral-muted); border-radius: 999px; padding: 6px 14px; font-size: 14.5px; font-weight: 500; }
+.cq-demo-tags span.picked { background: var(--cq-rose-200); color: var(--cq-rose-800); border-color: var(--cq-rose-400); }
+.cq-invite.cq-read + .cq-hint { margin-top: 14px; }
+
 /* ── 디자인 시스템 문서 화면 (/cupid/system) ───────────── */
 .cq-sys { padding-block: 24px 120px; display: grid; gap: 0; }
 .cq-sys > header { padding-block: clamp(32px, 8vh, 88px); display: grid; gap: 18px; }
