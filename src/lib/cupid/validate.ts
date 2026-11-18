@@ -2,6 +2,7 @@ import {
   CITIES, DATE_STYLES, DAYS, DEALBREAKERS, DRINKS, GENDERS, INTERESTS, PARTS, TONES, VALUES,
   type Profile, type SlotId,
 } from './types';
+import { CLOSENESS_ITEMS, CONFLICTS, CONTACTS, INTENTS, type Bond } from './psych';
 
 const pick = <T extends string>(v: unknown, allowed: readonly T[], min: number, name: string): T[] => {
   const out = Array.isArray(v) ? allowed.filter((a) => v.includes(a)) : [];
@@ -58,5 +59,11 @@ export function parseProfile(b: any): Profile {
     dateStyles: pick(b.dateStyles, ids(DATE_STYLES), 1, '데이트 스타일'),
     slots,
     tone: one(b.tone, ids(TONES), '에이전트 말투'),
+    bond: {
+      intent: one(b.bond?.intent, ids(INTENTS), '원하는 관계'),
+      contact: one(b.bond?.contact, ids(CONTACTS), '연락 빈도'),
+      conflict: one(b.bond?.conflict, ids(CONFLICTS), '갈등 방식'),
+      closeness: CLOSENESS_ITEMS.map((_, i) => int(b.bond?.closeness?.[i], 0, 2, '가까워지는 방식')) as Bond['closeness'],
+    },
   };
 }

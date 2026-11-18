@@ -1,4 +1,5 @@
 import type { CourtState } from './machine';
+import type { Bond } from './psych';
 
 export type Gender = 'female' | 'male' | 'other';
 export type Drink = 'none' | 'social' | 'often';
@@ -68,6 +69,7 @@ export interface Profile {
   dateStyles: DateStyle[];
   slots: SlotId[]; // 비공개 — 겹치는 시간만 드러남
   tone: Tone;
+  bond: Bond; // 비공개 — 관계 방식에 대한 답. 상대에겐 맞는 정도만 전해진다
 }
 
 export interface Persona extends Profile {
@@ -108,6 +110,9 @@ export interface Proposal {
   venue: string;
   icebreaker: string;
   reasons: string[];
+  ladder: string[]; // 대화 순서 제안 (가벼운 질문 → 조금 깊은 질문)
+  hints: string[]; // 이 조합에서 미리 알아두면 좋은 것
+  fun: string; // 점수에 넣지 않는 재미 요소 (사주)
 }
 
 export interface ScorePart {

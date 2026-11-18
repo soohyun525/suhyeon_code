@@ -7,6 +7,7 @@ import { parseProfile } from '../src/lib/cupid/validate';
 import { SAMPLE_PROFILE } from '../src/lib/cupid/sample';
 import { InstaError, parseHandle, readTaste } from '../src/lib/cupid/insta';
 import { INTERESTS, VALUES } from '../src/lib/cupid/types';
+import { intentClash, readBond, talkLadder } from '../src/lib/cupid/psych';
 
 // 1) 모든 전이의 도착지는 정의된 상태다
 for (const s of COURT_STATES) for (const to of Object.values(COURT_FLOW[s])) assert.ok(COURT_STATES.includes(to!));
@@ -81,6 +82,35 @@ assert.equal(applyOwnerEvent(by.doyun, 'MY_PASS').state, 'declined');
 assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, name: ' ' }));
 assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, slots: ['never-ever'] }));
 assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, birth: { year: 1995, month: 2, day: 30 } }));
+
+// 8-1) 관계 심리 요소
+const P = (bond: any) => ({ ...me, bond });
+const steady = { intent: 'serious', contact: 'daily', conflict: 'talk', closeness: [0, 0, 0, 0] };
+const total = (r: ReturnType<typeof readBond>) => r.parts.reduce((n, p) => n + p.points, 0);
+// 원하는 관계가 정반대면 점수 전에 멈춘다. 한쪽이 "만나보고"면 통과.
+assert.ok(intentClash(P(steady).bond, P({ ...steady, intent: 'casual' }).bond));
+assert.ok(!intentClash(P(steady).bond, P({ ...steady, intent: 'open' }).bond));
+assert.equal(by.junho.state, 'no_fit');
+assert.ok(by.junho.closedReason!.includes('원하는 관계'));
+// 사람이 아니라 조합에 점수: 마음 쓰는 편이어도 상대가 물러서는 편이 아니면 감점 없음
+const anxious = { ...steady, closeness: [2, 2, 0, 0] }, distant = { ...steady, closeness: [0, 0, 2, 2] };
+assert.equal(readBond(P(anxious), P(steady), 3, 2, 1).parts[0].points, 30);
+assert.equal(readBond(P(distant), P(steady), 3, 2, 1).parts[0].points, 30);
+// 다가가는 쪽 × 물러서는 쪽 조합만 크게 감점하고, 조언을 붙인다 (방향을 바꿔도 같은 결과)
+const chase = readBond(P(anxious), P(distant), 3, 2, 1);
+assert.equal(chase.parts[0].points, 12);
+assert.equal(total(chase), total(readBond(P(distant), P(anxious), 3, 2, 1)));
+assert.ok(chase.hints.length > 0);
+// 조언에 상대의 답이 그대로 드러나지 않는다
+for (const h of chase.hints) assert.ok(!/불안|회피|애착|당신은|상대는/.test(h));
+// 합계는 항상 0~100, 각 요소는 자기 최대치를 넘지 않는다
+for (const a1 of [steady, anxious, distant]) for (const b1 of [steady, anxious, distant, { ...distant, contact: 'light', conflict: 'avoid' }]) {
+  const r = readBond(P(a1), P(b1), 5, 5, 3);
+  assert.ok(r.parts.every((p) => p.points >= 0 && p.points <= p.max) && total(r) <= 100);
+}
+assert.equal(talkLadder('러닝', '도윤').length, 3);
+assert.ok(by.doyun.proposal!.ladder.length === 3 && by.doyun.proposal!.fun.includes('넣지 않았어요'));
+assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, bond: { ...SAMPLE_PROFILE.bond, closeness: [0, 0, 3, 0] } }));
 
 // 9) 인스타 읽기: 아이디 정리, 허용 목록 안의 결과, 같은 입력엔 같은 결과
 assert.equal(parseHandle(' @Haneul.Run '), 'haneul.run');

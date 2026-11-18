@@ -266,6 +266,15 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
   .cq * { transition: none !important; }
 }
 
+.cq-rows.wide > div { grid-template-columns: minmax(0, 1fr); gap: 8px; padding-block: 14px; }
+.cq-rows.wide dt { font-size: 15.5px; color: var(--ink); }
+@media (min-width: 900px) { .cq-rows.wide > div { grid-template-columns: minmax(0, 1fr) auto; gap: 16px; } }
+.cq-ladder { counter-reset: q; font-size: 17px; }
+.cq-ladder li { counter-increment: q; display: grid; grid-template-columns: 28px 1fr; padding-block: 10px; }
+.cq-ladder li + li { border-top: 1px solid var(--line); }
+.cq-ladder li::before { content: counter(q); font-weight: 700; color: var(--brand); }
+.cq-invite footer span { font-size: 12.5px; }
+
 /* 취향 읽기 결과 카드 */
 .cq-read .when { background: var(--cq-grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: var(--cq-type-heading); padding-bottom: 0.08em; }
 .cq-read dl { display: grid; margin-top: 14px; border-top: 1px solid var(--line); }

@@ -9,6 +9,7 @@ export const PERSONAS: Persona[] = [
     city: '서울', interests: ['전시', '커피', '사진', '여행'], values: ['성장', '유머', '배려'],
     smoker: false, drink: 'social', likesPets: true, dealbreakers: ['smoker'],
     dateStyles: ['coffee', 'culture'], slots: ['sat-afternoon', 'sun-afternoon', 'wed-evening'], tone: 'witty',
+    bond: { intent: 'open', contact: 'daily', conflict: 'talk', closeness: [1, 0, 1, 0] },
   },
   {
     id: 'jimin', name: '지민', emoji: '🐰', job: '간호사',
@@ -17,6 +18,7 @@ export const PERSONAS: Persona[] = [
     city: '서울', interests: ['러닝', '요리', '반려동물', '영화'], values: ['가족', '배려', '안정'],
     smoker: false, drink: 'none', likesPets: true, dealbreakers: ['no_pets', 'heavy_drinker'],
     dateStyles: ['walk', 'meal'], slots: ['tue-evening', 'thu-evening', 'sun-lunch'], tone: 'polite',
+    bond: { intent: 'serious', contact: 'often', conflict: 'talk', closeness: [2, 2, 0, 0] },
   },
   {
     id: 'haeun', name: '하은', emoji: '🐬', job: '마케터',
@@ -25,6 +27,7 @@ export const PERSONAS: Persona[] = [
     city: '부산', interests: ['여행', '맛집 탐방', '음악·공연', '사진'], values: ['모험', '유머', '솔직함'],
     smoker: false, drink: 'social', likesPets: true, dealbreakers: ['other_city'],
     dateStyles: ['meal', 'activity'], slots: ['fri-evening', 'sat-evening'], tone: 'witty',
+    bond: { intent: 'casual', contact: 'light', conflict: 'avoid', closeness: [0, 0, 1, 2] },
   },
   {
     id: 'yuna', name: '유나', emoji: '🦉', job: '백엔드 개발자',
@@ -33,6 +36,7 @@ export const PERSONAS: Persona[] = [
     city: '서울', interests: ['게임', '독서', '커피', '영화'], values: ['독립성', '솔직함', '성장'],
     smoker: false, drink: 'none', likesPets: false, dealbreakers: ['smoker'],
     dateStyles: ['coffee', 'culture'], slots: ['mon-evening', 'sat-lunch'], tone: 'direct',
+    bond: { intent: 'serious', contact: 'light', conflict: 'cool', closeness: [0, 0, 2, 2] },
   },
   {
     id: 'doyun', name: '도윤', emoji: '🐻', job: '프로덕트 매니저',
@@ -41,6 +45,7 @@ export const PERSONAS: Persona[] = [
     city: '서울', interests: ['러닝', '커피', '여행', '독서'], values: ['성장', '배려', '유머'],
     smoker: false, drink: 'social', likesPets: true, dealbreakers: ['smoker'],
     dateStyles: ['coffee', 'walk'], slots: ['sun-lunch', 'sat-afternoon', 'wed-evening'], tone: 'polite',
+    bond: { intent: 'serious', contact: 'daily', conflict: 'cool', closeness: [1, 0, 1, 0] },
   },
   {
     id: 'junho', name: '준호', emoji: '🦁', job: '셰프',
@@ -49,6 +54,7 @@ export const PERSONAS: Persona[] = [
     city: '서울', interests: ['요리', '맛집 탐방', '음악·공연', '반려동물'], values: ['가족', '솔직함', '안정'],
     smoker: false, drink: 'often', likesPets: true, dealbreakers: [],
     dateStyles: ['meal', 'activity'], slots: ['mon-evening', 'tue-lunch', 'wed-evening'], tone: 'direct',
+    bond: { intent: 'casual', contact: 'light', conflict: 'avoid', closeness: [0, 0, 2, 1] },
   },
   {
     id: 'minjae', name: '민재', emoji: '🐺', job: '영상 PD',
@@ -57,6 +63,7 @@ export const PERSONAS: Persona[] = [
     city: '부산', interests: ['영화', '사진', '여행', '게임'], values: ['모험', '유머', '독립성'],
     smoker: true, drink: 'social', likesPets: true, dealbreakers: [],
     dateStyles: ['culture', 'activity'], slots: ['fri-evening', 'sat-evening', 'sun-afternoon'], tone: 'witty',
+    bond: { intent: 'open', contact: 'often', conflict: 'talk', closeness: [1, 1, 0, 0] },
   },
   {
     id: 'siwoo', name: '시우', emoji: '🦌', job: '수의사',
@@ -65,5 +72,6 @@ export const PERSONAS: Persona[] = [
     city: '서울', interests: ['반려동물', '등산', '독서', '전시'], values: ['배려', '안정', '성장'],
     smoker: false, drink: 'social', likesPets: true, dealbreakers: ['no_pets'],
     dateStyles: ['walk', 'culture'], slots: ['sat-lunch', 'sun-afternoon', 'thu-evening'], tone: 'polite',
+    bond: { intent: 'serious', contact: 'daily', conflict: 'talk', closeness: [0, 1, 1, 0] },
   },
 ];

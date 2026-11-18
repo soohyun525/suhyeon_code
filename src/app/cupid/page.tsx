@@ -11,6 +11,7 @@ import { applyOwnerEvent, type OwnerEvent } from '@/lib/cupid/owner';
 import { COURT_LABEL, COURT_STEPS, SCREEN_FLOW, canFire, type CourtState, type Screen } from '@/lib/cupid/machine';
 import { SAMPLE_PROFILE } from '@/lib/cupid/sample';
 import type { TasteRead } from '@/lib/cupid/insta';
+import { CLOSENESS_ITEMS, CONFLICTS, CONTACTS, EMPTY_BOND, INTENTS, LEVELS, type Level } from '@/lib/cupid/psych';
 import { parseProfile } from '@/lib/cupid/validate';
 import {
   CITIES, DATE_STYLES, DAYS, DAY_LABEL, DEALBREAKERS, DRINKS, GENDERS, INTERESTS, PARTS, PART_LABEL, TONES, VALUES,
@@ -26,7 +27,7 @@ const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayout
 const STORE_KEY = 'cupid.profile.v1';
 const EMPTY: Profile = {
   name: '', birth: { year: 0, month: 0, day: 0 }, gender: 'female', seeking: [], ageRange: [25, 35], city: '서울',
-  interests: [], values: [], smoker: false, drink: 'social', likesPets: true, dealbreakers: [], dateStyles: [], slots: [], tone: 'witty',
+  interests: [], values: [], smoker: false, drink: 'social', likesPets: true, dealbreakers: [], dateStyles: [], slots: [], tone: 'witty', bond: EMPTY_BOND,
 };
 
 // 화면별 3D 여정 위치 (landing 은 스크롤이 0~0.6 을 직접 움직인다)
@@ -520,10 +521,36 @@ function Onboarding({ initial, prefilled, onDone }: { initial: Profile; prefille
             <div><dt>반려동물</dt><dd><Pick label="반려동물" options={[{ id: 'y', label: '좋아해요' }, { id: 'n', label: '어려워요' }]} value={d.likesPets ? 'y' : 'n'} onChange={(x) => set({ likesPets: x === 'y' })} /></dd></div>
           </dl>
         </Q>
-        <Q n={10} title="절대 안 되는 조건" hint="잠금 — 상대에게 내용이 전달되지 않아요. 에이전트가 통과 여부만 확인합니다.">
+        <Q n={10} title="원하는 관계">
+          <Pick label="원하는 관계" options={INTENTS} value={d.bond.intent} onChange={(intent) => set({ bond: { ...d.bond, intent } })} />
+        </Q>
+        <Q n={11} title="연락과 다툼" hint="잠금 — 답은 상대에게 전달되지 않아요. 두 사람이 맞는 정도만 계산해요.">
+          <dl className="cq-rows">
+            <div><dt>연락은</dt><dd><Pick label="편한 연락 빈도" options={CONTACTS} value={d.bond.contact} onChange={(contact) => set({ bond: { ...d.bond, contact } })} /></dd></div>
+            <div><dt>서운할 땐</dt><dd><Pick label="서운한 일이 생기면" options={CONFLICTS} value={d.bond.conflict} onChange={(conflict) => set({ bond: { ...d.bond, conflict } })} /></dd></div>
+          </dl>
+        </Q>
+        <Q n={12} title="가까워지는 방식" hint="잠금 — 좋고 나쁜 답은 없어요. 어떤 속도가 편한지 알기 위한 질문이에요.">
+          <dl className="cq-rows wide">
+            {CLOSENESS_ITEMS.map((item, i) => (
+              <div key={item.text}>
+                <dt>{item.text}</dt>
+                <dd>
+                  <Pick
+                    label={item.text}
+                    options={LEVELS}
+                    value={String(d.bond.closeness[i])}
+                    onChange={(v) => set({ bond: { ...d.bond, closeness: d.bond.closeness.map((x, k) => (k === i ? Number(v) : x)) as [Level, Level, Level, Level] } })}
+                  />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Q>
+        <Q n={13} title="절대 안 되는 조건" hint="잠금 — 상대에게 내용이 전달되지 않아요. 에이전트가 통과 여부만 확인합니다.">
           <Chips label="절대 안 되는 조건" options={DEALBREAKERS} value={d.dealbreakers} onToggle={(x) => set({ dealbreakers: toggle(d.dealbreakers, x) })} />
         </Q>
-        <Q n={11} title="만날 수 있는 시간" hint="먼저 누른 시간을 더 선호하는 것으로 봐요. 상대에겐 겹치는 시간만 보여요.">
+        <Q n={14} title="만날 수 있는 시간" hint="먼저 누른 시간을 더 선호하는 것으로 봐요. 상대에겐 겹치는 시간만 보여요.">
           <div className="cq-grid">
             <span />
             {DAYS.map((day) => <span key={day}>{DAY_LABEL[day]}</span>)}
@@ -542,7 +569,7 @@ function Onboarding({ initial, prefilled, onDone }: { initial: Profile; prefille
             ))}
           </div>
         </Q>
-        <Q n={12} title="에이전트 말투" hint="상대 에이전트에게 이렇게 말해요.">
+        <Q n={15} title="에이전트 말투" hint="상대 에이전트에게 이렇게 말해요.">
           <Pick label="에이전트 말투" options={TONES} value={d.tone} onChange={(tone) => set({ tone })} />
         </Q>
 
@@ -728,6 +755,7 @@ function Detail({ me, c, onBack, onOwner }: { me: string; c: Courtship; onBack: 
             {p.reasons.map((r) => <li key={r}>{r}</li>)}
             <li className="tip">{p.icebreaker}</li>
           </ul>
+          <footer><span>{p.fun}</span></footer>
           {confirmed && <span className="cq-stamp" ref={stamp} aria-hidden>확정</span>}
         </section>
       )}
@@ -762,9 +790,22 @@ function Detail({ me, c, onBack, onOwner }: { me: string; c: Courtship; onBack: 
         </section>
       )}
 
+      {p && (
+        <section className="cq-q" data-rise>
+          <div className="label"><h2>대화 순서 제안</h2><p>가벼운 질문에서 조금 깊은 질문으로. 답을 들으면 내 이야기도 같은 만큼 꺼내보세요.</p></div>
+          <ol className="cq-ladder field">{p.ladder.map((q) => <li key={q}>{q}</li>)}</ol>
+        </section>
+      )}
+      {p && p.hints.length > 0 && (
+        <section className="cq-q" data-rise>
+          <div className="label"><h2>미리 알아두면 좋은 것</h2><p>두 분의 답을 맞춰본 결과예요. 상대의 답 내용은 보여드리지 않아요.</p></div>
+          <ul className="cq-plain field">{p.hints.map((h) => <li key={h}>{h}</li>)}</ul>
+        </section>
+      )}
+
       {c.score !== null && (
         <section className="cq-q" data-rise>
-          <div className="label"><h2>케미 점수</h2><p className="cq-score"><em>{c.score}</em>/100</p></div>
+          <div className="label"><h2>첫 만남 적합도</h2><p className="cq-score"><em>{c.score}</em>/100</p><p>잘될지를 예언하는 점수가 아니에요. 첫 만남이 순조로울 조건이 얼마나 갖춰졌는지만 봐요.</p></div>
           <div className="cq-bars field">
             {c.breakdown.map((b) => (
               <div key={b.label}>

@@ -4,12 +4,13 @@
 
 import { computeChart } from '../saju/calculator';
 import { computeCompat } from '../saju/compat';
+import { intentClash, readBond, talkLadder } from './psych';
 import { transition, type CourtEvent, type CourtState } from './machine';
 import { PERSONAS } from './personas';
 import {
   DATE_STYLES, DAYS, DAY_LABEL, DEALBREAKERS, PART_HOUR, PART_LABEL,
   type A2AMessage, type AgentCard, type Courtship, type DateSlot, type Dealbreaker,
-  type Persona, type Profile, type ScorePart, type SlotId, type Day, type Part,
+  type DateStyle, type Persona, type Profile, type SlotId, type Day, type Part,
 } from './types';
 
 export const FIT_THRESHOLD = 50;
@@ -55,19 +56,18 @@ function sajuScore(a: Profile, b: Profile): number {
   return computeCompat(chart(a), chart(b)).score;
 }
 
-function scoreFit(me: Profile, them: Profile): { score: number; breakdown: ScorePart[]; saju: number } {
-  const i = shared(me.interests, them.interests).length;
-  const v = shared(me.values, them.values).length;
-  const s = shared(me.dateStyles, them.dateStyles).length;
-  const saju = sajuScore(me, them);
-  const breakdown: ScorePart[] = [
-    { label: '관심사', points: Math.round((Math.min(i, 3) / 3) * 35), max: 35 },
-    { label: '가치관', points: Math.round((Math.min(v, 2) / 2) * 30), max: 30 },
-    { label: '데이트 스타일', points: s ? 15 : 0, max: 15 },
-    { label: '사주 궁합', points: Math.round((saju / 100) * 20), max: 20 },
-  ];
-  return { score: breakdown.reduce((n, p) => n + p.points, 0), breakdown, saju };
+function scoreFit(me: Profile, them: Profile) {
+  const read = readBond(
+    me, them,
+    shared(me.interests, them.interests).length,
+    shared(me.values, them.values).length,
+    shared(me.dateStyles, them.dateStyles).length,
+  );
+  return { score: read.parts.reduce((n, p) => n + p.points, 0), breakdown: read.parts, hints: read.hints, strengths: read.strengths };
 }
+
+// 처음 만날 때는 함께 할 거리가 있는 쪽이 대화가 쉽다 (새로운 활동을 함께하면 가까워진다는 연구).
+const NOVELTY: DateStyle[] = ['activity', 'culture', 'walk', 'meal', 'coffee'];
 
 export function toCard(p: Persona, now: Date): AgentCard {
   return { id: p.id, name: p.name, emoji: p.emoji, age: ageOf(p.birth, now), city: p.city, job: p.job, bio: p.bio, interests: p.interests };
@@ -123,8 +123,13 @@ export function runCourtship(me: Profile, them: Persona, now: Date): Courtship {
   }
   say('theirs', 'screen', '양쪽 모두 통과예요. 이제 취향 이야기를 해볼까요?', 'SCREEN_PASS');
 
-  // 3) 케미 탐색
-  const { score, breakdown } = scoreFit(me, them);
+  // 3) 관계 방향 — 원하는 관계가 정반대면 여기서 멈춘다
+  say('mine', 'explore', '이번엔 어떤 관계를 원하는지, 연락과 대화 방식은 어떤지 맞춰볼게요. 답 내용은 주고받지 않고 맞는 정도만요.');
+  if (intentClash(me.bond, them.bond)) {
+    say('theirs', 'bow_out', '원하는 관계의 모습이 서로 달라요. 두 분 다 실망하지 않도록 여기서 멈출게요.', 'FIT_LOW');
+    return done({ closedReason: '원하는 관계의 모습이 서로 달라요 (진지한 연애 ↔ 가볍게)' });
+  }
+  const { score, breakdown, hints, strengths } = scoreFit(me, them);
   const si = shared(me.interests, them.interests);
   const sv = shared(me.values, them.values);
   say('mine', 'explore', `${me.name}님은 ${me.interests.slice(0, 3).join(' · ')}을(를) 좋아하고, ${me.values.join(' · ')}을(를) 중요하게 생각해요.`);
@@ -132,10 +137,10 @@ export function runCourtship(me: Profile, them: Persona, now: Date): Courtship {
     ? `오, ${[...si, ...sv].join(' · ')}이(가) 겹치네요! ${them.name}님도 그 얘기라면 한참 할 분이에요.`
     : `겹치는 부분은 많지 않네요. ${them.name}님은 ${them.values.join(' · ')} 쪽이에요.`);
   if (score < FIT_THRESHOLD) {
-    say('mine', 'bow_out', `케미 점수가 ${score}점이에요. 두 분 시간을 아끼는 쪽이 좋겠어요. 이야기 나눠주셔서 고마워요.`, 'FIT_LOW');
-    return done({ score, breakdown, closedReason: `케미 점수 ${score}점 (기준 ${FIT_THRESHOLD}점 미만)` });
+    say('mine', 'bow_out', `첫 만남 적합도가 ${score}점이에요. 두 분 시간을 아끼는 쪽이 좋겠어요. 이야기 나눠주셔서 고마워요.`, 'FIT_LOW');
+    return done({ score, breakdown, closedReason: `첫 만남 적합도 ${score}점 (기준 ${FIT_THRESHOLD}점 미만)` });
   }
-  say('mine', 'explore', `케미 점수 ${score}점이에요. 첫 만남을 잡아봐도 좋을 것 같아요.`, 'FIT_OK');
+  say('mine', 'explore', `첫 만남 적합도 ${score}점이에요. 만나볼 조건은 갖춰졌어요. 날짜를 잡아볼까요?`, 'FIT_OK');
 
   // 4) 일정 조율 — 한 번에 하나씩 제안하고, 엇갈리면 겹치는 시간만 맞춰본다
   const L = (id: SlotId) => slotToDate(id, now).label;
@@ -158,11 +163,12 @@ export function runCourtship(me: Profile, them: Persona, now: Date): Courtship {
   }
   if (!agreed) {
     say('theirs', 'bow_out', '아쉽지만 이번 주는 겹치는 시간이 없네요. 일정이 바뀌면 다시 찾아주세요.', 'NO_OVERLAP');
-    return done({ score, breakdown, closedReason: '케미는 좋지만 겹치는 시간이 없음 — 가능한 시간을 늘리면 다시 시도할 수 있어요' });
+    return done({ score, breakdown, closedReason: '조건은 잘 맞지만 겹치는 시간이 없음 — 가능한 시간을 늘리면 다시 시도할 수 있어요' });
   }
 
   const slot = slotToDate(agreed, now);
-  const style = shared(me.dateStyles, them.dateStyles)[0] ?? 'coffee';
+  const both = shared(me.dateStyles, them.dateStyles);
+  const style = NOVELTY.find((s) => both.includes(s)) ?? 'coffee';
   const venue = DATE_STYLES.find((d) => d.id === style)!.venue;
   say('theirs', 'accept', `좋아요, ${slot.label}에 ${venue}로 하죠.`);
   say('mine', 'accept', '그럼 각자 주인께 승인을 받을게요. 두 분 모두 승인하기 전까지는 확정이 아니에요.', 'AGREE');
@@ -170,6 +176,7 @@ export function runCourtship(me: Profile, them: Persona, now: Date): Courtship {
   const reasons = [
     si.length ? `둘 다 ${si.join(' · ')}을(를) 좋아해요` : null,
     sv.length ? `${sv.join(' · ')}을(를) 똑같이 중요하게 생각해요` : null,
+    ...strengths,
     `서로의 비공개 조건을 모두 통과했어요`,
   ].filter((r): r is string => !!r);
   const icebreaker = si.length
@@ -178,7 +185,8 @@ export function runCourtship(me: Profile, them: Persona, now: Date): Courtship {
 
   return done({
     score, breakdown,
-    proposal: { slot, alternatives: overlap.filter((o) => o.id !== agreed), venue, icebreaker, reasons },
+    proposal: { slot, alternatives: overlap.filter((o) => o.id !== agreed), venue, icebreaker, reasons, ladder: talkLadder(si[0] ?? null, them.name), hints,
+      fun: `재미로 보는 사주 궁합은 ${sajuScore(me, them)}점이에요. 근거가 없어 적합도에는 넣지 않았어요.` },
   });
 }
 
