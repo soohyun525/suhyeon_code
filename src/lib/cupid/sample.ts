@@ -17,5 +17,5 @@ export const SAMPLE_PROFILE: Profile = {
   dateStyles: ['coffee', 'walk'],
   slots: ['sat-afternoon', 'wed-evening', 'sun-lunch'],
   tone: 'witty',
-  bond: { intent: 'serious', contact: 'daily', conflict: 'talk', closeness: [1, 1, 0, 0] },
+  bond: { intent: 'serious', contact: 'daily', conflict: 'talk', closeness: [1, 1, 0, 0], loveGive: 'acts', loveGet: 'time', gives: ['support', 'depth'], needs: ['steady', 'depth'] },
 };

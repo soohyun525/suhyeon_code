@@ -96,7 +96,7 @@ export const COURT_LABEL: Record<CourtState, string> = {
 // ── 앱 화면 흐름 (두 번째 상태 머신) ───────────────────────────────
 // 로딩/에러를 boolean 플래그로 흩어놓지 않고 화면 상태 하나로 관리한다.
 
-export type Screen = 'landing' | 'connect' | 'reading' | 'persona' | 'onboarding' | 'briefing' | 'dispatching' | 'watching' | 'results' | 'proposal';
+export type Screen = 'landing' | 'connect' | 'reading' | 'persona' | 'onboarding' | 'interview' | 'analyzing' | 'insight' | 'briefing' | 'dispatching' | 'watching' | 'results' | 'proposal';
 export type ScreenEvent =
   | 'START'
   | 'HOME'
@@ -106,6 +106,9 @@ export type ScreenEvent =
   | 'READ_FAILED'
   | 'CONTINUE'
   | 'RETRY'
+  | 'ANSWERED'
+  | 'ANALYZED'
+  | 'ANALYZE_FAILED'
   | 'PROFILE_SAVED'
   | 'EDIT'
   | 'DISPATCH'
@@ -120,7 +123,10 @@ export const SCREEN_FLOW: Record<Screen, Partial<Record<ScreenEvent, Screen>>> =
   connect: { HANDLE_SENT: 'reading', SKIP: 'onboarding', HOME: 'landing' },
   reading: { READ_OK: 'persona', READ_FAILED: 'connect' },
   persona: { CONTINUE: 'onboarding', RETRY: 'connect' },
-  onboarding: { PROFILE_SAVED: 'briefing', HOME: 'landing' },
+  onboarding: { PROFILE_SAVED: 'interview', HOME: 'landing' },
+  interview: { ANSWERED: 'analyzing', SKIP: 'briefing', EDIT: 'onboarding' },
+  analyzing: { ANALYZED: 'insight', ANALYZE_FAILED: 'interview' },
+  insight: { CONTINUE: 'briefing', RETRY: 'interview' },
   briefing: { EDIT: 'onboarding', DISPATCH: 'dispatching' },
   dispatching: { LOADED: 'watching', FAILED: 'briefing' },
   watching: { WATCHED: 'results' },

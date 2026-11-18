@@ -7,7 +7,8 @@ import { parseProfile } from '../src/lib/cupid/validate';
 import { SAMPLE_PROFILE } from '../src/lib/cupid/sample';
 import { InstaError, parseHandle, readTaste } from '../src/lib/cupid/insta';
 import { INTERESTS, VALUES } from '../src/lib/cupid/types';
-import { intentClash, readBond, talkLadder } from '../src/lib/cupid/psych';
+import { attachStyle, intentClash, readBond, talkLadder } from '../src/lib/cupid/psych';
+import { InterviewError, readByRule } from '../src/lib/cupid/interview';
 
 // 1) 모든 전이의 도착지는 정의된 상태다
 for (const s of COURT_STATES) for (const to of Object.values(COURT_FLOW[s])) assert.ok(COURT_STATES.includes(to!));
@@ -85,7 +86,7 @@ assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, birth: { year: 1995, month
 
 // 8-1) 관계 심리 요소
 const P = (bond: any) => ({ ...me, bond });
-const steady = { intent: 'serious', contact: 'daily', conflict: 'talk', closeness: [0, 0, 0, 0] };
+const steady = { intent: 'serious', contact: 'daily', conflict: 'talk', closeness: [0, 0, 0, 0], loveGive: 'time', loveGet: 'time', gives: ['steady'], needs: [] as string[] };
 const total = (r: ReturnType<typeof readBond>) => r.parts.reduce((n, p) => n + p.points, 0);
 // 원하는 관계가 정반대면 점수 전에 멈춘다. 한쪽이 "만나보고"면 통과.
 assert.ok(intentClash(P(steady).bond, P({ ...steady, intent: 'casual' }).bond));
@@ -94,11 +95,11 @@ assert.equal(by.junho.state, 'no_fit');
 assert.ok(by.junho.closedReason!.includes('원하는 관계'));
 // 사람이 아니라 조합에 점수: 마음 쓰는 편이어도 상대가 물러서는 편이 아니면 감점 없음
 const anxious = { ...steady, closeness: [2, 2, 0, 0] }, distant = { ...steady, closeness: [0, 0, 2, 2] };
-assert.equal(readBond(P(anxious), P(steady), 3, 2, 1).parts[0].points, 30);
-assert.equal(readBond(P(distant), P(steady), 3, 2, 1).parts[0].points, 30);
+assert.equal(readBond(P(anxious), P(steady), 3, 2, 1).parts[0].points, 25);
+assert.equal(readBond(P(distant), P(steady), 3, 2, 1).parts[0].points, 25);
 // 다가가는 쪽 × 물러서는 쪽 조합만 크게 감점하고, 조언을 붙인다 (방향을 바꿔도 같은 결과)
 const chase = readBond(P(anxious), P(distant), 3, 2, 1);
-assert.equal(chase.parts[0].points, 12);
+assert.equal(chase.parts[0].points, 10);
 assert.equal(total(chase), total(readBond(P(distant), P(anxious), 3, 2, 1)));
 assert.ok(chase.hints.length > 0);
 // 조언에 상대의 답이 그대로 드러나지 않는다
@@ -108,6 +109,25 @@ for (const a1 of [steady, anxious, distant]) for (const b1 of [steady, anxious, 
   const r = readBond(P(a1), P(b1), 5, 5, 3);
   assert.ok(r.parts.every((p) => p.points >= 0 && p.points <= p.max) && total(r) <= 100);
 }
+// 속마음: 내가 바라는 것을 상대가 잘 주면 점수가 오른다. 바람을 모르면(대화 건너뜀) 중간값.
+const part = (r: ReturnType<typeof readBond>, label: string) => r.parts.find((x) => x.label === label)!.points;
+const wants = { ...steady, needs: ['depth'] };
+assert.ok(part(readBond(P(wants), P({ ...steady, gives: ['depth'] }), 0, 0, 0), '속마음') > part(readBond(P(wants), P({ ...steady, gives: ['fun'] }), 0, 0, 0), '속마음'));
+assert.equal(part(readBond(P(steady), P(steady), 0, 0, 0), '속마음'), 10);
+// 사랑의 언어: 주는 방식과 받고 싶은 방식이 양쪽 다 만나면 10, 다 어긋나면 0
+assert.equal(part(readBond(P(steady), P(steady), 0, 0, 0), '사랑의 언어'), 10);
+assert.equal(part(readBond(P({ ...steady, loveGet: 'words' }), P({ ...steady, loveGet: 'gifts' }), 0, 0, 0), '사랑의 언어'), 0);
+// 애착 유형 이름은 네 가지
+assert.deepEqual([steady, anxious, distant, { ...steady, closeness: [2, 2, 2, 2] }].map((b1) => attachStyle(b1 as any)), ['secure', 'anxious', 'avoidant', 'fearful']);
+// 깊은 대화 읽기: 이상형으로 말한 것과 이야기에서 드러난 것을 구분한다
+const told = { ease: '같이 있으면 편안했어요. 연락이 한결같아서 불안하지 않았어요.', hurt: '갑자기 연락이 끊겼을 때요. 기다리는 게 힘들었어요.', spark: '', hard: '옆에 있어주면 좋아요', ideal: '재미있고 유머 있는 사람', never: '잠수' };
+const insight = readByRule(told);
+assert.equal(insight.needs[0], 'steady');
+assert.ok(insight.gap.includes('재미있고 유머 있는 사람') && insight.gap.includes('한결같은 안정감'));
+assert.ok(readByRule({ ...told, ideal: '한결같고 편안한 사람' }).gap.includes('같은 방향'));
+assert.throws(() => readByRule({ ease: '음', hurt: '', spark: '', hard: '', ideal: '', never: '' }), InterviewError);
+assert.ok(!/상처|트라우마|진단|무의식/.test(JSON.stringify(insight)));
+
 assert.equal(talkLadder('러닝', '도윤').length, 3);
 assert.ok(by.doyun.proposal!.ladder.length === 3 && by.doyun.proposal!.fun.includes('넣지 않았어요'));
 assert.throws(() => parseProfile({ ...SAMPLE_PROFILE, bond: { ...SAMPLE_PROFILE.bond, closeness: [0, 0, 3, 0] } }));

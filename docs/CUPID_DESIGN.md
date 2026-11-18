@@ -113,7 +113,7 @@ src/app/cupid/                     page.tsx(앱 화면) · Landing.tsx(첫 화�
 scripts/verify-cupid.ts            상태 머신·엔진 자체 점검
 ```
 
-첫 만남 적합도(100): 가까워지는 속도 30 · 다툼과 연락 20 · 원하는 방향 25 · 함께할 거리 25. 50점 이상이면 일정 조율로 넘어간다. 사주는 점수에서 빼고 재미로만 보여준다. 근거와 원칙은 [CUPID_PSYCHOLOGY.md](CUPID_PSYCHOLOGY.md).
+첫 만남 적합도(100): 가까워지는 속도 25 · 다툼과 연락 15 · 원하는 방향 20 · 속마음 20 · 사랑의 언어 10 · 함께할 거리 10. 프로필 뒤에 깊은 대화(`interview → analyzing → insight`)가 있고, 본인만 보는 연애 심리 결과(속마음·애착 유형·사랑의 언어)를 보여준다. 50점 이상이면 일정 조율로 넘어간다. 사주는 점수에서 빼고 재미로만 보여준다. 근거와 원칙은 [CUPID_PSYCHOLOGY.md](CUPID_PSYCHOLOGY.md).
 
 ## 7-1. 인스타그램으로 시작하기
 

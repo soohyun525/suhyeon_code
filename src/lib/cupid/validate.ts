@@ -2,7 +2,7 @@ import {
   CITIES, DATE_STYLES, DAYS, DEALBREAKERS, DRINKS, GENDERS, INTERESTS, PARTS, TONES, VALUES,
   type Profile, type SlotId,
 } from './types';
-import { CLOSENESS_ITEMS, CONFLICTS, CONTACTS, INTENTS, type Bond } from './psych';
+import { CLOSENESS_ITEMS, CONFLICTS, CONTACTS, INTENTS, LOVE_LANGS, NEEDS, type Bond } from './psych';
 
 const pick = <T extends string>(v: unknown, allowed: readonly T[], min: number, name: string): T[] => {
   const out = Array.isArray(v) ? allowed.filter((a) => v.includes(a)) : [];
@@ -64,6 +64,10 @@ export function parseProfile(b: any): Profile {
       contact: one(b.bond?.contact, ids(CONTACTS), '연락 빈도'),
       conflict: one(b.bond?.conflict, ids(CONFLICTS), '갈등 방식'),
       closeness: CLOSENESS_ITEMS.map((_, i) => int(b.bond?.closeness?.[i], 0, 2, '가까워지는 방식')) as Bond['closeness'],
+      loveGive: one(b.bond?.loveGive, ids(LOVE_LANGS), '마음을 표현하는 방식'),
+      loveGet: one(b.bond?.loveGet, ids(LOVE_LANGS), '사랑받는다고 느끼는 방식'),
+      gives: pick(b.bond?.gives, ids(NEEDS), 1, '내가 잘 주는 것').slice(0, 2),
+      needs: pick(b.bond?.needs, ids(NEEDS), 0, '바라는 것').slice(0, 3),
     },
   };
 }

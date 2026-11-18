@@ -275,6 +275,16 @@ body:has(.cq)::before, body:has(.cq)::after { display: none; }
 .cq-ladder li::before { content: counter(q); font-weight: 700; color: var(--brand); }
 .cq-invite footer span { font-size: 12.5px; }
 
+/* 깊은 대화 */
+.cq-ask { display: grid; gap: 18px; padding-block: 26px; border-top: 1px solid var(--line); }
+.cq-ask h2 { font-size: clamp(22px, 2.4vw, 32px); line-height: 1.35; letter-spacing: -0.025em; }
+.cq-ask .more { color: var(--brand); font-weight: 600; }
+.cq-ask textarea { width: 100%; resize: vertical; min-height: 120px; padding: 16px 18px; font: inherit; font-size: 17px; line-height: 1.6; color: var(--ink); background: rgba(255, 255, 255, 0.78); border: 1px solid var(--cq-rose-200); border-radius: var(--seed-radius-r5); }
+.cq-ask textarea:focus { outline: none; border-color: var(--cq-rose-400); box-shadow: 0 0 0 4px rgba(255, 163, 191, 0.28); }
+.cq-ask textarea::placeholder { color: var(--ink-3); }
+.cq-past li span { font-size: 15.5px; color: var(--ink-2); }
+.cq-read dd strong { color: var(--cq-rose-800); }
+
 /* 취향 읽기 결과 카드 */
 .cq-read .when { background: var(--cq-grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: var(--cq-type-heading); padding-bottom: 0.08em; }
 .cq-read dl { display: grid; margin-top: 14px; border-top: 1px solid var(--line); }

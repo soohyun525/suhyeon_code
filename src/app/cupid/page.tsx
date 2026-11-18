@@ -11,7 +11,9 @@ import { applyOwnerEvent, type OwnerEvent } from '@/lib/cupid/owner';
 import { COURT_LABEL, COURT_STEPS, SCREEN_FLOW, canFire, type CourtState, type Screen } from '@/lib/cupid/machine';
 import { SAMPLE_PROFILE } from '@/lib/cupid/sample';
 import type { TasteRead } from '@/lib/cupid/insta';
-import { CLOSENESS_ITEMS, CONFLICTS, CONTACTS, EMPTY_BOND, INTENTS, LEVELS, type Level } from '@/lib/cupid/psych';
+import { ATTACH, CLOSENESS_ITEMS, CONFLICTS, CONTACTS, EMPTY_BOND, INTENTS, LEVELS, LOVE_LANGS, NEEDS, attachStyle, needLabel, type Level } from '@/lib/cupid/psych';
+import { QUESTIONS } from '@/lib/cupid/questions';
+import type { Insight } from '@/lib/cupid/interview';
 import { parseProfile } from '@/lib/cupid/validate';
 import {
   CITIES, DATE_STYLES, DAYS, DAY_LABEL, DEALBREAKERS, DRINKS, GENDERS, INTERESTS, PARTS, PART_LABEL, TONES, VALUES,
@@ -32,10 +34,10 @@ const EMPTY: Profile = {
 
 // 화면별 3D 여정 위치 (landing 은 스크롤이 0~0.6 을 직접 움직인다)
 const STAGE_P: Record<Exclude<Screen, 'landing'>, number> = {
-  connect: 0.62, reading: 0.64, persona: 0.65, onboarding: 0.66, briefing: 0.74, dispatching: 0.84, watching: 0.88, results: 0.92, proposal: 0.96,
+  connect: 0.62, reading: 0.64, persona: 0.65, onboarding: 0.66, interview: 0.69, analyzing: 0.71, insight: 0.72, briefing: 0.74, dispatching: 0.84, watching: 0.88, results: 0.92, proposal: 0.96,
 };
 const CRUMBS: { label: string; screens: Screen[] }[] = [
-  { label: '프로필', screens: ['connect', 'reading', 'persona', 'onboarding'] },
+  { label: '프로필', screens: ['connect', 'reading', 'persona', 'onboarding', 'interview', 'analyzing', 'insight'] },
   { label: '브리핑', screens: ['briefing'] },
   { label: '대화', screens: ['dispatching', 'watching'] },
   { label: '결과', screens: ['results', 'proposal'] },
@@ -50,6 +52,8 @@ interface Ctx {
   error: string | null;
   handle: string | null;
   taste: TasteRead | null;
+  answers: Record<string, string> | null;
+  insight: Insight | null;
 }
 type Action =
   | { type: 'PROFILE_SAVED'; profile: Profile }
@@ -57,6 +61,9 @@ type Action =
   | { type: 'HANDLE_SENT'; handle: string }
   | { type: 'READ_OK'; taste: TasteRead }
   | { type: 'READ_FAILED'; error: string }
+  | { type: 'ANSWERED'; answers: Record<string, string> }
+  | { type: 'ANALYZED'; insight: Insight }
+  | { type: 'ANALYZE_FAILED'; error: string }
   | { type: 'LOADED'; courtships: Courtship[]; voiced: boolean }
   | { type: 'FAILED'; error: string }
   | { type: 'OPEN'; id: string }
@@ -74,17 +81,23 @@ function reducer(ctx: Ctx, a: Action): Ctx {
   const next: Ctx = { ...ctx, screen, error: null };
   if (a.type === 'PROFILE_SAVED') next.profile = a.profile;
   if (a.type === 'LOADED') Object.assign(next, { courtships: a.courtships, voiced: a.voiced });
-  if (a.type === 'FAILED' || a.type === 'READ_FAILED') next.error = a.error;
+  if (a.type === 'FAILED' || a.type === 'READ_FAILED' || a.type === 'ANALYZE_FAILED') next.error = a.error;
+  if (a.type === 'ANSWERED') next.answers = a.answers;
+  if (a.type === 'ANALYZED') {
+    next.insight = a.insight;
+    // 읽어낸 바람을 프로필에 넣는다 — 매칭의 "속마음" 요소가 이걸 쓴다
+    if (next.profile) next.profile = { ...next.profile, bond: { ...next.profile.bond, needs: a.insight.needs } };
+  }
   if (a.type === 'HANDLE_SENT') next.handle = a.handle;
   if (a.type === 'READ_OK') next.taste = a.taste;
-  if (a.type === 'SKIP') next.taste = null;
+  if (a.type === 'SKIP' && ctx.screen === 'connect') next.taste = null;
   if (a.type === 'OPEN') next.openId = a.id;
   return next;
 }
 
 export default function CupidPage() {
   const [ctx, send] = useReducer(reducer, {
-    screen: 'landing', profile: null, courtships: [], voiced: false, openId: null, error: null, handle: null, taste: null,
+    screen: 'landing', profile: null, courtships: [], voiced: false, openId: null, error: null, handle: null, taste: null, answers: null, insight: null,
   });
   const [saved, setSaved] = useState<Profile | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -111,6 +124,22 @@ export default function CupidPage() {
       live = false;
     };
   }, [ctx.screen, ctx.handle]);
+
+  // analyzing 상태에 들어오면 깊은 대화를 읽는다.
+  useEffect(() => {
+    if (ctx.screen !== 'analyzing' || !ctx.answers) return;
+    let live = true;
+    fetch('/api/cupid/interview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ answers: ctx.answers }) })
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error);
+        if (live) send({ type: 'ANALYZED', insight: data.insight });
+      })
+      .catch((e) => live && send({ type: 'ANALYZE_FAILED', error: e?.message || '이야기를 읽지 못했어요. 다시 시도해주세요.' }));
+    return () => {
+      live = false;
+    };
+  }, [ctx.screen, ctx.answers]);
 
   // dispatching 상태에 들어오면 에이전트를 보낸다.
   useEffect(() => {
@@ -216,6 +245,25 @@ export default function CupidPage() {
                 send({ type: 'PROFILE_SAVED', profile });
               }}
             />
+          )}
+          {ctx.screen === 'interview' && (
+            <Interview
+              initial={ctx.answers ?? {}}
+              error={ctx.error}
+              onDone={(answers) => send({ type: 'ANSWERED', answers })}
+              onSkip={() => send({ type: 'SKIP' })}
+              onEdit={() => send({ type: 'EDIT' })}
+            />
+          )}
+          {ctx.screen === 'analyzing' && (
+            <section className="cq-wait" aria-live="polite">
+              <p className="cq-kicker">01 — 프로필</p>
+              <h1>이야기를<br />읽는 중<span className="cq-dots3" aria-hidden><i>.</i><i>.</i><i>.</i></span></h1>
+              <p>말한 이상형이 아니라, 이야기에서 반복되는 바람을 찾고 있어요.</p>
+            </section>
+          )}
+          {ctx.screen === 'insight' && ctx.insight && ctx.profile && (
+            <InsightView insight={ctx.insight} profile={ctx.profile} onContinue={() => send({ type: 'CONTINUE' })} onRetry={() => send({ type: 'RETRY' })} />
           )}
           {ctx.screen === 'briefing' && ctx.profile && (
             <Briefing profile={ctx.profile} error={ctx.error} onEdit={() => send({ type: 'EDIT' })} onGo={() => send({ type: 'DISPATCH' })} />
@@ -547,10 +595,19 @@ function Onboarding({ initial, prefilled, onDone }: { initial: Profile; prefille
             ))}
           </dl>
         </Q>
-        <Q n={13} title="절대 안 되는 조건" hint="잠금 — 상대에게 내용이 전달되지 않아요. 에이전트가 통과 여부만 확인합니다.">
+        <Q n={13} title="사랑의 언어" hint="잠금 — 마음이 오가는 방식이에요.">
+          <dl className="cq-rows wide">
+            <div><dt>이럴 때 사랑받는다고 느껴요</dt><dd><Pick label="사랑받는다고 느끼는 방식" options={LOVE_LANGS} value={d.bond.loveGet} onChange={(loveGet) => set({ bond: { ...d.bond, loveGet } })} /></dd></div>
+            <div><dt>나는 주로 이렇게 표현해요</dt><dd><Pick label="마음을 표현하는 방식" options={LOVE_LANGS} value={d.bond.loveGive} onChange={(loveGive) => set({ bond: { ...d.bond, loveGive } })} /></dd></div>
+          </dl>
+        </Q>
+        <Q n={14} title="내가 잘 주는 것" hint="연인에게 자연스럽게 해주는 것. 최대 2개">
+          <Chips label="내가 잘 주는 것" options={NEEDS.map((n) => ({ id: n.id, label: n.give }))} value={d.bond.gives} onToggle={(x) => set({ bond: { ...d.bond, gives: toggle(d.bond.gives, x, 2) } })} />
+        </Q>
+        <Q n={15} title="절대 안 되는 조건" hint="잠금 — 상대에게 내용이 전달되지 않아요. 에이전트가 통과 여부만 확인합니다.">
           <Chips label="절대 안 되는 조건" options={DEALBREAKERS} value={d.dealbreakers} onToggle={(x) => set({ dealbreakers: toggle(d.dealbreakers, x) })} />
         </Q>
-        <Q n={14} title="만날 수 있는 시간" hint="먼저 누른 시간을 더 선호하는 것으로 봐요. 상대에겐 겹치는 시간만 보여요.">
+        <Q n={16} title="만날 수 있는 시간" hint="먼저 누른 시간을 더 선호하는 것으로 봐요. 상대에겐 겹치는 시간만 보여요.">
           <div className="cq-grid">
             <span />
             {DAYS.map((day) => <span key={day}>{DAY_LABEL[day]}</span>)}
@@ -569,13 +626,13 @@ function Onboarding({ initial, prefilled, onDone }: { initial: Profile; prefille
             ))}
           </div>
         </Q>
-        <Q n={15} title="에이전트 말투" hint="상대 에이전트에게 이렇게 말해요.">
+        <Q n={17} title="에이전트 말투" hint="상대 에이전트에게 이렇게 말해요.">
           <Pick label="에이전트 말투" options={TONES} value={d.tone} onChange={(tone) => set({ tone })} />
         </Q>
 
         <div className="cq-submit" data-rise>
           {error && <Callout.Root tone="critical" role="alert"><Callout.Content><Callout.Description>{error}</Callout.Description></Callout.Content></Callout.Root>}
-          <Go type="submit">다음 — 에이전트 브리핑</Go>
+          <Go type="submit">다음 — 깊은 대화</Go>
         </div>
       </form>
     </Split>
@@ -588,6 +645,92 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       <span className="rowh">{label}</span>
       {children}
     </>
+  );
+}
+
+// ── 1-1. 깊은 대화 → 속마음 ──────────────────────────────────────
+
+function Interview({ initial, error, onDone, onSkip, onEdit }: {
+  initial: Record<string, string>; error: string | null;
+  onDone: (answers: Record<string, string>) => void; onSkip: () => void; onEdit: () => void;
+}) {
+  const [answers, setAnswers] = useState<Record<string, string>>(initial);
+  const [at, setAt] = useState(0);
+  const [draft, setDraft] = useState(initial[QUESTIONS[0].id] ?? '');
+  const [nudged, setNudged] = useState<string[]>([]);
+  const q = QUESTIONS[at];
+  const asksMore = nudged.includes(q.id);
+
+  const move = (text: string) => {
+    const next = { ...answers, [q.id]: text };
+    setAnswers(next);
+    if (at === QUESTIONS.length - 1) return onDone(next);
+    setAt(at + 1);
+    setDraft(next[QUESTIONS[at + 1].id] ?? '');
+  };
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = draft.trim();
+    // 답이 짧으면 한 번만 더 물어본다
+    if (text && text.length < 14 && q.more && !asksMore) return setNudged([...nudged, q.id]);
+    move(text);
+  };
+
+  return (
+    <Split
+      kicker={`01 — 프로필 · 깊은 대화 ${at + 1}/${QUESTIONS.length}`}
+      title={<>말로 고른 이상형 말고,<br /><em>이야기 속의 마음</em></>}
+      lead="정답은 없어요. 떠오르는 대로 두세 문장이면 충분해요. 답은 읽고 나서 저장하지 않아요."
+      aside={<p className="cq-links"><button className="cq-link" onClick={onEdit}>프로필로 돌아가기</button><button className="cq-link" onClick={onSkip}>대화 건너뛰기</button></p>}
+    >
+      {at > 0 && (
+        <ol className="cq-script cq-past" data-rise>
+          {QUESTIONS.slice(0, at).map((x) => (
+            <li key={x.id} className="mine"><b>{x.ask.slice(0, 22)}…</b><span>{answers[x.id] || '건너뜀'}</span></li>
+          ))}
+        </ol>
+      )}
+      <form className="cq-ask" onSubmit={submit} key={q.id}>
+        <p className="cq-kicker">에이전트의 질문</p>
+        <h2>{q.ask}</h2>
+        {asksMore && <p className="more" aria-live="polite">{q.more}</p>}
+        <textarea id="cq-answer" aria-label="내 답" value={draft} onChange={(e) => setDraft(e.target.value)} rows={4} maxLength={600} placeholder="편하게 적어주세요" autoFocus />
+        {error && <Callout.Root tone="critical" role="alert"><Callout.Content><Callout.Description>{error}</Callout.Description></Callout.Content></Callout.Root>}
+        <div className="cq-links">
+          <Go type="submit">{at === QUESTIONS.length - 1 ? '이야기 읽어보기' : '다음 질문'}</Go>
+          {!draft.trim() && at < QUESTIONS.length - 1 && <Go type="button" variant="ghost" onClick={() => move('')}>이 질문은 넘길게요</Go>}
+        </div>
+      </form>
+    </Split>
+  );
+}
+
+function InsightView({ insight, profile, onContinue, onRetry }: { insight: Insight; profile: Profile; onContinue: () => void; onRetry: () => void }) {
+  const style = ATTACH[attachStyle(profile.bond)];
+  const love = (id: string) => LOVE_LANGS.find((l) => l.id === id)!.label;
+  return (
+    <Split
+      kicker="01 — 프로필 · 연애 심리"
+      title={<>당신이 바라는 건<br /><em>{needLabel(insight.needs[0])}</em></>}
+      lead={insight.gap}
+      aside={<button className="cq-link" onClick={onRetry}>대화 다시 하기</button>}
+    >
+      <section className="cq-invite cq-read" data-rise>
+        <header><span>나만 보는 결과</span><span>{insight.source === 'ai' ? 'AI가 읽음' : '낱말로 읽음'}</span></header>
+        <p className="cq-hint">이런 사람과 잘 맞아요</p>
+        <p className="when">{insight.needs.map((n) => NEEDS.find((x) => x.id === n)!.give.replace(/요$/, '')).join(', ')}는 사람</p>
+        <dl>
+          <div><dt>속마음</dt><dd className="cq-demo-tags">{insight.needs.map((n) => <span key={n} className="picked">{needLabel(n)}</span>)}</dd></div>
+          {insight.evidence.length > 0 && <div><dt>읽은 근거</dt><dd>{insight.evidence.map((e) => `${needLabel(e.need)} ${e.count}번`).join(' · ')}</dd></div>}
+          <div><dt>애착 유형</dt><dd><strong>{style.name}</strong> — {style.line} {style.tip}</dd></div>
+          <div><dt>사랑의 언어</dt><dd>받을 때는 <strong>{love(profile.bond.loveGet)}</strong>, 줄 때는 <strong>{love(profile.bond.loveGive)}</strong></dd></div>
+        </dl>
+      </section>
+      <p className="cq-hint" data-rise>유형은 고정된 게 아니고, 짧은 질문으로 본 대략의 모습이에요. 이 결과는 상대에게 보이지 않고, 잘 맞는 사람을 찾는 데만 써요.</p>
+      <div className="cq-submit" data-rise>
+        <div className="cq-links"><Go onClick={onContinue}>이 결과로 매칭하기</Go></div>
+      </div>
+    </Split>
   );
 }
 

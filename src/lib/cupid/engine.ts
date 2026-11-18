@@ -178,7 +178,7 @@ export function runCourtship(me: Profile, them: Persona, now: Date): Courtship {
     sv.length ? `${sv.join(' · ')}을(를) 똑같이 중요하게 생각해요` : null,
     ...strengths,
     `서로의 비공개 조건을 모두 통과했어요`,
-  ].filter((r): r is string => !!r);
+  ].filter((r): r is string => !!r).slice(0, 5);
   const icebreaker = si.length
     ? `"${si[0]}" 이야기로 시작해보세요. ${them.name}님도 좋아하는 주제예요.`
     : `${them.name}님의 일(${them.job}) 이야기를 물어보세요.`;
